@@ -62,10 +62,14 @@ if (-not $env:OPEN3D_LAUNCHER_BUILD_DATE) { $env:OPEN3D_LAUNCHER_BUILD_DATE = (G
 Write-Output "$AppName $Version for Windows $Arch ($Target)"
 
 if (-not $SkipBuild) {
-  # Static CRT: no VC++ redistributable needed. Scoped to the target so host build scripts and
-  # proc-macros are unaffected.
-  $flagVar = 'CARGO_TARGET_' + ($Target.ToUpper() -replace '-', '_') + '_RUSTFLAGS'
-  [Environment]::SetEnvironmentVariable($flagVar, '-C target-feature=+crt-static')
+  # Static CRT: no VC++ redistributable needed. And the paths rustc writes into the program (a panic
+  # message names its source file) are cut down to "cargo\..." and "target\...", so the published
+  # exe says nothing of the folders of the machine that built it. Passed as CARGO_ENCODED_RUSTFLAGS
+  # because those folders may have spaces in their names; with --target, cargo applies these flags
+  # to the target only, so host build scripts and proc-macros are unaffected.
+  $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
+  $env:CARGO_ENCODED_RUSTFLAGS = @('-C', 'target-feature=+crt-static',
+    "--remap-path-prefix=$cargoHome=cargo", "--remap-path-prefix=$TargetDir=target") -join [char]0x1f
   # Fail the build (rather than warn) if the icon/VERSIONINFO can't be embedded.
   $env:OPEN3D_LAUNCHER_REQUIRE_WINRES = '1'
   Invoke-Native "cargo build ($Target)" { cargo build --release --locked -p $Pkg --target $Target }
