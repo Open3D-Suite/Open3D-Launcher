@@ -105,18 +105,19 @@ pub(crate) fn other_copies_in(app: &SuiteApp, plugins: &Path) -> Vec<String> {
     found
 }
 
-/// True while a 3ds Max someone works in is running (`3dsmax.exe`): bundles are never changed under
-/// it. It caches what it loaded and goes on loading scripts from the bundle's folder, so a swap
-/// would leave an open session half old and half new, and whoever works in it can close it and
-/// try again.
+/// True while a 3ds Max is running (`3dsmax.exe`): bundles are never changed under it. It caches
+/// what it loaded and goes on loading scripts from the bundle's folder, so a swap would leave an
+/// open session half old and half new, and whoever works in it can close it and try again.
 ///
-/// `3dsmaxbatch.exe`, the 3ds Max without a window that render jobs and render farms keep running,
-/// is left out on purpose: it has no window to close and may stay up for hours on a machine that
-/// renders, so waiting for it would mean never updating there. The swap is safe for it: its
-/// plug-ins stay loaded from the copy moved aside (see [`OldCopy::InUse`]) and the next process
-/// loads the new one. It is looked for only to tell the user ([`max_batch_running`]).
-/// `3dsmaxcmd.exe` needs no look of its own: it is a small front end that links nothing of 3ds Max
-/// but its network library, and what it renders is rendered by a `3dsmax.exe`.
+/// That includes a 3ds Max without a window. `3dsmaxbatch.exe`, which render jobs and render farms
+/// keep running, is a front end: it starts a `3dsmax.exe -batch` and that child is the process
+/// that loads the plug-ins (measured with 3ds Max 2027 and a compiled plug-in). So a batch or farm
+/// render is waited for like any other 3ds Max, and a machine that renders all day is only updated
+/// between renders. `3dsmaxcmd.exe` is a front end too: it links nothing of 3ds Max but its network
+/// library, and what it renders is rendered by a `3dsmax.exe`.
+///
+/// A file of the old copy can still be loaded when the swap happens (a 3ds Max started in between,
+/// any other program that has it open as a library): the swap is safe then, see [`OldCopy::InUse`].
 pub fn max_running() -> bool {
     // Development builds only: test installs while 3ds Max is open (the release build ignores it).
     if cfg!(debug_assertions) && std::env::var_os("OPEN3D_LAUNCHER_IGNORE_MAX").is_some() {
@@ -125,8 +126,9 @@ pub fn max_running() -> bool {
     image_running("3dsmax.exe")
 }
 
-/// True while a 3ds Max without a window is running (`3dsmaxbatch.exe`). Nothing waits for it (see
-/// [`max_running`]): it only keeps what it loaded until it restarts, which the user is told.
+/// True while `3dsmaxbatch.exe` is running. Its `3dsmax.exe` is what [`max_running`] sees and
+/// waits for; this look only adds a sentence to a finished job's message in the rare case that
+/// the front end is up without one.
 pub fn max_batch_running() -> bool {
     image_running("3dsmaxbatch.exe")
 }

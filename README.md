@@ -10,20 +10,21 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
 
 - Lists the Open3D apps with the version you have and the latest one, with each version's release notes.
 - Installs each 3ds Max app as a plug-in bundle in `%APPDATA%\Autodesk\ApplicationPlugins`: per user, no
-  administrator rights, and every 3ds Max from 2025 on loads it. **Open in 3ds Max** starts the newest 3ds Max
-  you have.
+  administrator rights, and every 3ds Max the app supports loads it (from 2025 on; OpenScatter needs 2027).
+  **Open in 3ds Max** starts the newest 3ds Max you have.
 - Installs each standalone app (a program of its own, such as OpenView) in
   `%LOCALAPPDATA%\Programs\Open3D\<App>`, also per user and without administrator rights, with shortcuts in
   the Start menu and on the desktop. **Open** starts it.
 - Reads each app's versions from that app's own GitHub releases, and checks every download against its
   published SHA-256 before touching anything; a failed or interrupted update puts the previous version back.
 - Never changes a plug-in while 3ds Max is open, nor a standalone app while it is running: close it first
-  and the launcher tells you so.
+  and the launcher tells you so. A 3ds Max that renders in the background (a batch or farm render) counts
+  as open: on a machine that renders, update the plug-ins between renders.
 - Updates itself. It keeps running in the notification area when you close its window and can start with
   Windows (both in *Preferences*).
 - English and Spanish. No account, no sign-in, no telemetry.
 
-Requirements: Windows 10 or 11 (64-bit); 3ds Max 2025 or newer for the 3ds Max apps.
+Requirements: Windows 10 or 11 (64-bit); 3ds Max 2025 or newer for the 3ds Max apps (2027 for OpenScatter).
 
 ## Download and install
 
@@ -41,7 +42,7 @@ choose **More info > Run anyway**. Updates are checked against the checksums pub
 Removing the launcher leaves the apps you installed with it where they are: remove them from the launcher
 first if you want them gone. Removing an app keeps its settings.
 
-> Status: early (v0.3.3). What each version adds: [CHANGELOG.md](CHANGELOG.md).
+> Status: early (v0.3.4). What each version adds: [CHANGELOG.md](CHANGELOG.md).
 
 ### Apps
 
@@ -121,7 +122,9 @@ the GitHub CLI:
 - `launcher`: builds the MSI and the portable zip, tags `vX.Y.Z` and creates this repository's release
   with the version's CHANGELOG section.
 
-Each takes `--dry-run` to build without uploading anything.
+Each takes `--dry-run` to build without uploading anything. For an app with a compiled plug-in
+(OpenScatter), `app <id> --prebuilt` then uploads the very zip that dry run built, once it has been tested:
+two builds of a compiled plug-in are never the same bytes.
 
 ## Repository layout
 

@@ -98,7 +98,7 @@ pub(crate) mod testing {
     /// A program file held the way a running process holds one it loaded: mapped as a program
     /// image, with no file handle left open. Windows then lets the file and the folders above it be
     /// renamed but not deleted, until the mapping goes. That is what was measured with a compiled
-    /// plug-in loaded in `3dsmaxbatch.exe`. A file that is merely open behaves differently: opened
+    /// plug-in loaded by a 3ds Max batch render. A file that is merely open behaves differently: opened
     /// without `FILE_SHARE_DELETE` its folder can't be renamed either, opened with it the file can
     /// be deleted, and so can a file mapped as plain data.
     pub(crate) struct LoadedLibrary {

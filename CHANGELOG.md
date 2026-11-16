@@ -2,18 +2,20 @@
 
 What each version of the Open3D Launcher adds, newest first.
 
-## In development
+## 0.3.4 — 16 November 2026
 
 - **OpenScatter is in the launcher.** Install and update OpenScatter, a scatter for 3ds Max 2027: one
   object that places millions of render-time instances on surfaces. It is an early version, without an
   interface yet, and the first app with a compiled 3ds Max plug-in. Launchers already installed see it
   through the signed catalog; this version also lists it without it.
-- **Plug-ins update while 3ds Max renders in the background.** Windows won't delete a compiled plug-in
-  that a 3ds Max batch or farm render still has loaded. Updating or removing such a plug-in then put the
-  new version in place but was reported as failed, and later updates of it were refused until that render
-  ended. Now the update or removal finishes, and the launcher deletes what is left of the old copy later,
-  once nothing uses it. It also tells you when 3ds Max processes are still running in the background:
-  they keep what they had loaded until they restart. A 3ds Max you have open must still be closed first.
+- **An update or removal no longer ends as failed over a file that is still loaded.** Windows won't
+  delete a compiled plug-in that a running program still has loaded. If that happened while a 3ds Max
+  plug-in was being updated or removed, the new version was put in place but the job was reported as
+  failed, and later updates of it were refused until that program ended. Now the update or removal
+  finishes, the launcher deletes what is left of the old copy later, once nothing uses it, and tells you
+  that what is still running keeps what it had loaded until it restarts. It is a rare case: as before, a
+  plug-in is only changed with 3ds Max closed, and that includes a 3ds Max that renders in the background
+  (a batch or farm render).
 - **The same for apps that are programs of their own.** Updating or removing one (OpenView, OpenGaussian,
   OpenRef, OpenFarm) no longer ends as failed when another program still has one of its files loaded: the
   new version is in place, or the app and its shortcuts are gone, and the launcher tells you that a program
