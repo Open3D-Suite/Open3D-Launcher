@@ -67,6 +67,10 @@ first if you want them gone. Removing an app keeps its settings.
   Blender (Cycles, Eevee) scenes to every machine of the studio. A program of its own, installed on every
   computer of the farm. [carlesllavata/OpenFarm](https://github.com/carlesllavata/OpenFarm)
 
+- **OpenScatter**: a scatter for 3ds Max 2027: one object that places millions of render-time instances of
+  your models on surfaces (tested in Arnold and Corona, not yet in V-Ray). An early version, with no
+  interface yet. [carlesllavata/OpenScatter](https://github.com/carlesllavata/OpenScatter)
+
 More apps are added to the catalog as they are published.
 
 ## How it works

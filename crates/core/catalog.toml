@@ -228,3 +228,40 @@ text = "Priorities, retries on other machines, and clear errors when a scene is 
 [[apps.details.features]]
 title = "Send from where you work"
 text = "A button in 3ds Max, an add-on in Blender, or the farm's own window."
+
+[[apps]]
+color = [104, 196, 104]
+former_bundles = []
+former_ids = []
+former_names = []
+id = "openscatter"
+binary = "openscatter"
+site = "https://github.com/carlesllavata/OpenScatter"
+windows_msi_publisher = "Open3D"
+desktop_categories = ["Graphics", "3DGraphics"]
+startup_wm_class = "openscatter"
+icon_url = "https://raw.githubusercontent.com/carlesllavata/Open3D/main/launcher-app-icons/openscatter-6319ac2e6b4734bdca3638a3aba9c1f8f54527f159502258584076f3fa1b0e3c.png"
+icon_sha256 = "6319ac2e6b4734bdca3638a3aba9c1f8f54527f159502258584076f3fa1b0e3c"
+ink_dark = [150, 222, 140]
+ink_light = [34, 130, 70]
+kind = "official"
+name = "OpenScatter"
+publisher = "Open3D"
+repo = "carlesllavata/OpenScatter"
+tagline = "Scatter millions of instances in 3ds Max"
+[apps.details]
+headline = "Grass, trees and stones by the million."
+about = "OpenScatter is one object that places millions of copies of your models over the surfaces you choose and hands them to the renderer as real instances, without creating nodes. It is tested in Arnold and Corona; not yet in V-Ray.\n\nThis is an early version: it has no interface yet, so every setting is made from MAXScript or Python."
+platforms = "Windows, 3ds Max 2027"
+[[apps.details.features]]
+title = "Real instances"
+text = "Arnold and Corona render every copy as an instance, each model with its own material."
+[[apps.details.features]]
+title = "Several models"
+text = "Mix models by probability, with random rotation and scale, leaning with the ground."
+[[apps.details.features]]
+title = "Slope and altitude"
+text = "Keep the instances off steep ground, or inside a range of heights."
+[[apps.details.features]]
+title = "The same everywhere"
+text = "The same settings give the same scatter on every computer and with any number of threads."

@@ -1,12 +1,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Publish Open3D app packages, the signed launcher catalog and the launcher itself.
 
-    python -I tools\\publish.py app opentools [--version 0.5.1] [--dry-run]
+    python -I tools\\publish.py app opentools [--version 0.5.1] [--dry-run | --prebuilt]
         Builds `<id>-<ver>-windows-x64-3dsmax.zip` from the app's `vX.Y.Z` tag (`git archive`, never the
         working tree): runs the app's build steps (tools/apps.json), checks the bundle's AppVersion, adds the
         app's LICENSE as `<bundle>/LICENSE`, and attaches the zip and `SHA256SUMS.txt` to the app's own GitHub
         release `vX.Y.Z` (created from that version's CHANGELOG section when it doesn't exist yet). The
         launcher reads each app's versions from those releases.
+        `--prebuilt` publishes the zip an earlier `--dry-run` left in `dist/` instead of building again:
+        for an app with a compiled plug-in (OpenScatter), where two builds are never the same bytes, it
+        makes what was tested and what is published the same file. OpenScatter's build step compiles the
+        plug-in: it needs the Visual Studio Build Tools and the 3ds Max SDK (`ADSK_3DSMAX_SDK_2027`).
     python -I tools\\publish.py catalog [--dry-run] [--no-push]
         Signs `crates/core/catalog.toml` as `launcher-catalog.toml` + `.sig` (Ed25519, the key in
         `%USERPROFILE%\\.open3d\\launcher-catalog-signing-key.pem`, never in git), publishes the app icons in
@@ -146,7 +150,22 @@ def sha256(path):
     return h.hexdigest()
 
 
-def publish_app(app_id, version=None, dry_run=False):
+def prebuilt_digest(zip_path, sums, bundle_name, version):
+    """The digest of the zip an earlier --dry-run left in dist/, once it is known to be that very zip."""
+    if not zip_path.is_file() or not sums.is_file():
+        raise PublishError("No %s in %s: build it first with --dry-run" % (zip_path.name, DIST.name))
+    digest = sha256(zip_path)
+    if sums.read_text(encoding="utf-8").split()[:1] != [digest]:
+        raise PublishError("%s is not the zip %s was written for" % (zip_path.name, sums.name))
+    with zipfile.ZipFile(zip_path) as z:
+        xml = z.read(bundle_name + "/PackageContents.xml").decode("utf-8")
+    m = re.search(r'\sAppVersion\s*=\s*"([^"]+)"', xml)
+    if not m or version_key(m.group(1)) != version_key(version):
+        raise PublishError("%s is not version %s" % (zip_path.name, version))
+    return digest
+
+
+def publish_app(app_id, version=None, dry_run=False, prebuilt=False):
     apps = json.loads(APPS_FILE.read_text(encoding="utf-8"))
     if app_id not in apps:
         raise PublishError("Unknown app %r (known: %s)" % (app_id, ", ".join(apps)))
@@ -157,28 +176,32 @@ def publish_app(app_id, version=None, dry_run=False):
     print("%s %s (tag %s)" % (app["name"], version, tag))
     DIST.mkdir(exist_ok=True)
     zip_path = DIST / asset
+    sums = DIST / ("SHA256SUMS-%s-%s.txt" % (app_id, version))
     work = Path(tempfile.mkdtemp(prefix="open3d-publish-"))
     try:
         export_tag(checkout, tag, work)
-        for script in app.get("build", []):
-            print("  build: %s" % script)
-            run([sys.executable, "-I", str(work / script)], cwd=work)
-        bundle_dir = work / app["bundle_path"]
-        if not (bundle_dir / "PackageContents.xml").is_file():
-            raise PublishError("No %s at tag %s" % (app["bundle_path"], tag))
-        found = bundle_version(bundle_dir)
-        if version_key(found) != version_key(version):
-            raise PublishError("Tag %s but the bundle says AppVersion %s" % (tag, found))
         if not (work / "LICENSE").is_file():
             raise PublishError("No LICENSE at tag %s: every Open3D app ships its license" % tag)
         notes = changelog_section(work / app["changelog"], version)
-        count = zip_bundle(bundle_dir, app["bundle"], zip_path, work / "LICENSE")
+        if prebuilt:
+            digest = prebuilt_digest(zip_path, sums, app["bundle"], version)
+            print("  %s: as built before, %.0f KB, sha256 %s" % (asset, zip_path.stat().st_size / 1024, digest))
+        else:
+            for script in app.get("build", []):
+                print("  build: %s" % script)
+                run([sys.executable, "-I", str(work / script)], cwd=work)
+            bundle_dir = work / app["bundle_path"]
+            if not (bundle_dir / "PackageContents.xml").is_file():
+                raise PublishError("No %s at tag %s" % (app["bundle_path"], tag))
+            found = bundle_version(bundle_dir)
+            if version_key(found) != version_key(version):
+                raise PublishError("Tag %s but the bundle says AppVersion %s" % (tag, found))
+            count = zip_bundle(bundle_dir, app["bundle"], zip_path, work / "LICENSE")
+            digest = sha256(zip_path)
+            sums.write_text("%s  %s\n" % (digest, asset), encoding="utf-8", newline="\n")
+            print("  %s: %d files, %.0f KB, sha256 %s" % (asset, count, zip_path.stat().st_size / 1024, digest))
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    digest = sha256(zip_path)
-    sums = DIST / ("SHA256SUMS-%s-%s.txt" % (app_id, version))
-    sums.write_text("%s  %s\n" % (digest, asset), encoding="utf-8", newline="\n")
-    print("  %s: %d files, %.0f KB, sha256 %s" % (asset, count, zip_path.stat().st_size / 1024, digest))
     if dry_run:
         print("Dry run: nothing uploaded.")
         return
@@ -306,7 +329,9 @@ def main(argv=None):
     a = sub.add_parser("app", help="publish an app's package to its own release")
     a.add_argument("app")
     a.add_argument("--version")
-    a.add_argument("--dry-run", action="store_true")
+    how = a.add_mutually_exclusive_group()
+    how.add_argument("--dry-run", action="store_true", help="build the zip into dist/ and upload nothing")
+    how.add_argument("--prebuilt", action="store_true", help="publish the zip an earlier --dry-run built")
     c = sub.add_parser("catalog", help="sign and publish the launcher catalog")
     c.add_argument("--dry-run", action="store_true")
     c.add_argument("--no-push", action="store_true")
@@ -315,7 +340,7 @@ def main(argv=None):
     args = p.parse_args(argv)
     try:
         if args.cmd == "app":
-            publish_app(args.app, args.version, args.dry_run)
+            publish_app(args.app, args.version, args.dry_run, args.prebuilt)
         elif args.cmd == "launcher":
             publish_launcher(args.dry_run)
         else:

@@ -382,4 +382,17 @@ openfarm	Fair and robust	Justa y robusta
 openfarm	Priorities, retries on other machines, and clear errors when a scene is wrong.	Prioridades, reintentos en otras máquinas y errores claros cuando una escena está mal.
 openfarm	Send from where you work	Envía desde donde trabajas
 openfarm	A button in 3ds Max, an add-on in Blender, or the farm's own window.	Un botón en 3ds Max, un complemento en Blender o la propia ventana de la granja.
+openscatter	Scatter millions of instances in 3ds Max	Esparce millones de instancias en 3ds Max
+openscatter	Grass, trees and stones by the million.	Hierba, árboles y piedras por millones.
+openscatter	OpenScatter is one object that places millions of copies of your models over the surfaces you choose and hands them to the renderer as real instances, without creating nodes. It is tested in Arnold and Corona; not yet in V-Ray.	OpenScatter es un objeto que reparte millones de copias de tus modelos sobre las superficies que elijas y se las entrega al motor de render como instancias reales, sin crear nodos. Está probado en Arnold y Corona; en V-Ray, todavía no.
+openscatter	This is an early version: it has no interface yet, so every setting is made from MAXScript or Python.	Es una versión temprana: todavía no tiene interfaz, así que todos los ajustes se hacen desde MAXScript o Python.
+openscatter	Windows, 3ds Max 2027	Windows, 3ds Max 2027
+openscatter	Real instances	Instancias reales
+openscatter	Arnold and Corona render every copy as an instance, each model with its own material.	Arnold y Corona renderizan cada copia como una instancia, y cada modelo con su material.
+openscatter	Several models	Varios modelos
+openscatter	Mix models by probability, with random rotation and scale, leaning with the ground.	Mezcla modelos por probabilidad, con rotación y escala aleatorias, inclinados con el terreno.
+openscatter	Slope and altitude	Pendiente y altitud
+openscatter	Keep the instances off steep ground, or inside a range of heights.	Deja las instancias fuera de las pendientes fuertes o dentro de un rango de alturas.
+openscatter	The same everywhere	Igual en todas partes
+openscatter	The same settings give the same scatter on every computer and with any number of threads.	Los mismos ajustes dan el mismo resultado en cualquier equipo y con cualquier número de hilos.
 	Open in 3ds Max	Abrir en 3ds Max

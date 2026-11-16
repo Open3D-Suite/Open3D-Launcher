@@ -17,5 +17,16 @@
       "tools/build.py"
     ],
     "changelog": "CHANGELOG.md"
+  },
+  "openscatter": {
+    "name": "OpenScatter",
+    "repo": "carlesllavata/OpenScatter",
+    "checkout": "../apps/OpenScatter",
+    "bundle": "OpenScatter.bundle",
+    "bundle_path": "dist/OpenScatter.bundle",
+    "build": [
+      "tools/package.py"
+    ],
+    "changelog": "CHANGELOG.md"
   }
 }

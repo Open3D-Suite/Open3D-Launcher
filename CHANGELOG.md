@@ -4,6 +4,10 @@ What each version of the Open3D Launcher adds, newest first.
 
 ## In development
 
+- **OpenScatter is in the launcher.** Install and update OpenScatter, a scatter for 3ds Max 2027: one
+  object that places millions of render-time instances on surfaces. It is an early version, without an
+  interface yet, and the first app with a compiled 3ds Max plug-in. Launchers already installed see it
+  through the signed catalog; this version also lists it without it.
 - **Plug-ins update while 3ds Max renders in the background.** Windows won't delete a compiled plug-in
   that a 3ds Max batch or farm render still has loaded. Updating or removing such a plug-in then put the
   new version in place but was reported as failed, and later updates of it were refused until that render

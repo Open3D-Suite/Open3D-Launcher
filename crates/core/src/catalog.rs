@@ -214,6 +214,7 @@ pub fn app_icon_png(id: &str) -> Option<&'static [u8]> {
         "opengaussian" => include_bytes!("../../../assets/app-icons/opengaussian.png"),
         "openref" => include_bytes!("../../../assets/app-icons/openref.png"),
         "openfarm" => include_bytes!("../../../assets/app-icons/openfarm.png"),
+        "openscatter" => include_bytes!("../../../assets/app-icons/openscatter.png"),
         _ => return None,
     })
 }
