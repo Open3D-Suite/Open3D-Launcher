@@ -8,10 +8,13 @@
 //! the Start menu and to the desktop.
 //!
 //! Work happens in `.open3d-<id>` beside the app folders, as for 3ds Max bundles
-//! ([`crate::max_bundle`]): the new copy is unpacked and checked in `new\<App>`, the old one waits in
-//! `backup\<App>` until the new one is in place, and [`recover`] puts a backup back after an
-//! interrupted update. The exe's own file properties say which version a copy is, so a copy put
-//! there by hand is found too.
+//! ([`crate::max_bundle`], [`crate::work_folder`]): the new copy is unpacked and checked in
+//! `new\<App>`, the old one waits in `backup\<App>` until the new one is in place, and [`recover`]
+//! puts a backup back after an interrupted update. An update or a removal waits for the app's own
+//! program to be closed, not for another process that loaded one of its libraries: the old copy is
+//! then moved out of the way, which makes the job done, and what Windows won't delete yet waits in
+//! `old-<n>` ([`OldCopy`]). The exe's own file properties say which version a copy is, so a copy
+//! put there by hand is found too.
 //!
 //! Open3D's own code, not part of ArtCraft Launcher.
 
@@ -20,6 +23,7 @@ use std::path::{Path, PathBuf};
 use open3d_launcher_core::{InstallSource, Installed, PackageKind, SuiteApp, version};
 
 use crate::manifest::Record;
+use crate::work_folder::{self, OldCopy};
 
 /// The folders a standalone app touches.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -141,31 +145,38 @@ pub fn running_error(app: &SuiteApp) -> String {
     format!("{} is running. Quit it, then try again.", app.name)
 }
 
+/// What a finished install, update or removal adds to its message when a file of the old copy is
+/// still loaded (`old`). Only the app's own program is waited for ([`running`]): a library of the
+/// app that some other process loaded stays with that process until it ends.
+pub fn still_running_note(old: OldCopy) -> Option<&'static str> {
+    (old == OldCopy::InUse).then_some("A program that is still running keeps using files of the copy that was installed until it closes.")
+}
+
 fn work_dir(apps: &Path, app: &SuiteApp) -> PathBuf {
     apps.join(format!(".open3d-{}", app.id))
 }
 
-/// Puts back an old copy left aside by an interrupted update, then removes the work folder.
-pub fn recover(app: &SuiteApp, apps: &Path) -> Result<(), String> {
-    let work = work_dir(apps, app);
-    if !work.exists() {
-        return Ok(());
-    }
-    let target = apps.join(app.name);
-    let backup = work.join("backup").join(app.name);
-    if backup.is_dir() && !target.exists() {
-        std::fs::rename(&backup, &target).map_err(|e| format!("Couldn't restore {} ({e})", target.display()))?;
-    }
-    std::fs::remove_dir_all(&work).map_err(|e| format!("Couldn't clean {} ({e})", work.display()))
+/// Finishes what an earlier install or removal left in the work folder: puts back the old copy of
+/// an update that was interrupted, never the one a finished update left beside the installed app,
+/// then deletes everything else as far as it can be deleted ([`work_folder::recover`]).
+pub fn recover(app: &SuiteApp, apps: &Path) -> Result<OldCopy, String> {
+    work_folder::recover(app.name, &work_dir(apps, app), &apps.join(app.name))
 }
 
 /// Installs or updates `app` from the downloaded `zip`; the program in it must say it is `version`.
-pub fn install(app: &SuiteApp, zip: &Path, version: &str) -> Result<Record, String> {
+/// Also says whether the copy it replaced is still in use.
+pub fn install(app: &SuiteApp, zip: &Path, version: &str) -> Result<(Record, OldCopy), String> {
     install_into(app, zip, version, &Places::system().ok_or("no per-user programs folder on this system")?, &exe_version)
 }
 
 /// [`install`] into `places`.
-pub(crate) fn install_into(app: &SuiteApp, zip: &Path, version: &str, places: &Places, version_of: VersionOf<'_>) -> Result<Record, String> {
+pub(crate) fn install_into(
+    app: &SuiteApp,
+    zip: &Path,
+    version: &str,
+    places: &Places,
+    version_of: VersionOf<'_>,
+) -> Result<(Record, OldCopy), String> {
     if !open3d_launcher_core::hosted_catalog::windows_file_name(app.name) {
         return Err(format!("{} can't be a folder's name, so it wasn't installed", app.name));
     }
@@ -178,30 +189,41 @@ pub(crate) fn install_into(app: &SuiteApp, zip: &Path, version: &str, places: &P
     }
     recover(app, apps)?;
     let work = work_dir(apps, app);
-    let fresh = work.join("new").join(app.name);
+    let fresh_parent = work.join("new");
+    // What an earlier try unpacked must be gone, or two packages would be mixed.
+    if fresh_parent.exists() {
+        return Err(format!("Couldn't clean {}; is a file in use?", fresh_parent.display()));
+    }
+    let fresh = fresh_parent.join(app.name);
     std::fs::create_dir_all(&fresh).map_err(|e| format!("Couldn't create {} ({e})", fresh.display()))?;
     // A folder of that name without the program in it (the person agreed to replace it) is no copy.
     let update = exe.is_file();
     let result = swap_in(app, zip, version, &work, &fresh, &target, version_of);
-    // Puts the old copy back if it is still aside, then removes the work folder. If even that fails
-    // the work folder stays for the next try: the old copy is never deleted unplaced.
+    // Puts the old copy back if the swap failed halfway, then deletes what is left in the work
+    // folder. If even putting it back fails the work folder stays for the next try: the old copy
+    // is never deleted unplaced.
     let cleanup = recover(app, apps);
     result?;
-    cleanup?;
+    // The new version is in place, so the install worked whatever became of the old copy.
+    let old = cleanup.unwrap_or_else(|e| {
+        log::warn!("{}: {e}", app.name);
+        OldCopy::InUse
+    });
     // An update leaves the shortcuts as they are: one the person deleted stays deleted.
     if !update {
         for problem in add_shortcuts(app, &exe, places) {
             log::warn!("{}: {problem}", app.name);
         }
     }
-    Ok(Record {
+    let record = Record {
         version: version.to_string(),
         kind: PackageKind::AppZip,
         path: exe,
         installed_at: crate::now(),
         files: Vec::new(),
         needs_root: false,
-    })
+    };
+    Ok((record, old))
 }
 
 fn swap_in(app: &SuiteApp, zip: &Path, version: &str, work: &Path, fresh: &Path, target: &Path, version_of: VersionOf<'_>) -> Result<(), String> {
@@ -234,14 +256,14 @@ fn swap_in(app: &SuiteApp, zip: &Path, version: &str, work: &Path, fresh: &Path,
     Ok(())
 }
 
-/// Removes the app's folder and its shortcuts. The app's settings and data live elsewhere and are
-/// kept.
-pub fn uninstall(app: &SuiteApp, exe: &Path) -> Result<(), String> {
+/// Removes the app's folder and its shortcuts, and says whether a file of it is still in use. The
+/// app's settings and data live elsewhere and are kept.
+pub fn uninstall(app: &SuiteApp, exe: &Path) -> Result<OldCopy, String> {
     remove(app, exe, &Places::system().ok_or("no per-user programs folder on this system")?)
 }
 
 /// [`uninstall`] in `places`.
-pub(crate) fn remove(app: &SuiteApp, exe: &Path, places: &Places) -> Result<(), String> {
+pub(crate) fn remove(app: &SuiteApp, exe: &Path, places: &Places) -> Result<OldCopy, String> {
     // The whole app folder goes, also when the program sits in a folder of its own inside it.
     let app_folder = app_dir(app, places);
     let dir = app_folder.as_path();
@@ -253,22 +275,23 @@ pub(crate) fn remove(app: &SuiteApp, exe: &Path, places: &Places) -> Result<(), 
         return Err(running_error(app));
     }
     let apps = &places.apps;
-    recover(app, apps)?;
+    let mut old = recover(app, apps)?;
     // Looked up while the program is still there to compare with; removed once it is gone.
     let shortcuts = own_shortcuts(app, exe, places);
     if dir.exists() {
         // Moved out of the way first, so a failure halfway never leaves half a program in place.
+        // Once it is out of the way the removal has worked, whatever of it can't be deleted yet.
         let work = work_dir(apps, app);
         std::fs::create_dir_all(&work).map_err(|e| format!("Couldn't prepare the removal ({e})"))?;
-        std::fs::rename(dir, work.join("removed")).map_err(|e| format!("Couldn't remove {}; is a file in use? ({e})", dir.display()))?;
-        std::fs::remove_dir_all(&work).map_err(|e| format!("Couldn't delete {} ({e})", work.display()))?;
+        std::fs::rename(dir, work_folder::spare_name(&work)).map_err(|e| format!("Couldn't remove {}; is a file in use? ({e})", dir.display()))?;
+        old = work_folder::sweep(app.name, &work);
     }
     for link in shortcuts {
         if let Err(e) = std::fs::remove_file(&link) {
             log::warn!("{}: couldn't remove {} ({e})", app.name, link.display());
         }
     }
-    Ok(())
+    Ok(old)
 }
 
 /// Whether two paths are spelled alike: Windows ignores case and the direction of the slashes.
@@ -350,6 +373,7 @@ fn shortcut_target(link: &Path) -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::work_folder::testing::{LoadedLibrary, files_under, load_library};
     use std::io::Write;
 
     /// A sample standalone app with a neutral name.
@@ -394,6 +418,11 @@ mod tests {
     }
 
     fn install_sample(tmp: &Path, places: &Places, version: &str, marker: &str) -> Result<Record, String> {
+        install_sample_over(tmp, places, version, marker).map(|(record, _)| record)
+    }
+
+    /// [`install_sample`], with what became of the copy it replaced.
+    fn install_sample_over(tmp: &Path, places: &Places, version: &str, marker: &str) -> Result<(Record, OldCopy), String> {
         install_into(&app(), &package(tmp, Some("PhotoTool.exe"), version, marker), version, places, &written_version)
     }
 
@@ -407,7 +436,8 @@ mod tests {
         let places = Places::under(&tmp.path().join("home"));
         assert_eq!(detect_in(&app(), &places, &written_version), None);
         install_sample(tmp.path(), &places, "0.5.0", "old").unwrap();
-        let record = install_sample(tmp.path(), &places, "0.5.1", "new").unwrap();
+        let (record, old) = install_sample_over(tmp.path(), &places, "0.5.1", "new").unwrap();
+        assert_eq!(old, OldCopy::Gone);
         let dir = places.apps.join("PhotoTool");
         assert_eq!((record.kind, &record.path), (PackageKind::AppZip, &dir.join("PhotoTool.exe")));
         assert_eq!(names(&dir), ["LICENSE", "PhotoTool.exe", "docs"]);
@@ -489,7 +519,7 @@ mod tests {
         std::fs::create_dir_all(work.join("new").join("PhotoTool")).unwrap();
         std::fs::rename(places.apps.join("PhotoTool"), work.join("backup").join("PhotoTool")).unwrap();
         assert_eq!(installed_version(&places), None);
-        recover(&app(), &places.apps).unwrap();
+        assert_eq!(recover(&app(), &places.apps), Ok(OldCopy::Gone));
         assert_eq!(installed_version(&places).as_deref(), Some("0.5.0"));
         assert_eq!(names(&places.apps), ["PhotoTool"]);
     }
@@ -534,7 +564,7 @@ mod tests {
         assert!(remove(&a, &other.join("PhotoTool.exe"), &places).unwrap_err().contains("left alone"));
         assert!(elsewhere.is_file() && other.is_dir());
 
-        remove(&a, &record.path, &places).unwrap();
+        assert_eq!(remove(&a, &record.path, &places), Ok(OldCopy::Gone));
         assert_eq!(names(&places.apps), ["Launcher"]);
         assert!(!places.shortcuts[0].join("PhotoTool.lnk").exists(), "the app's own shortcut stays behind");
         assert!(desktop_link.is_file(), "a shortcut to another copy was removed");
@@ -582,7 +612,8 @@ mod tests {
         let at_root = package(tmp.path(), Some("PhotoTool.exe"), "0.1.0", "root");
         assert!(install_into(&a, &at_root, "0.1.0", &places, &written_version).unwrap_err().contains("doesn't contain bin/PhotoTool.exe"));
 
-        let record = install_into(&a, &package(tmp.path(), Some("bin/PhotoTool.exe"), "0.1.0", "old"), "0.1.0", &places, &written_version).unwrap();
+        let (record, _) =
+            install_into(&a, &package(tmp.path(), Some("bin/PhotoTool.exe"), "0.1.0", "old"), "0.1.0", &places, &written_version).unwrap();
         assert_eq!(record.path, dir.join("bin").join("PhotoTool.exe"));
         assert_eq!(names(&dir), ["LICENSE", "bin", "docs"]);
         for folder in &places.shortcuts {
@@ -626,5 +657,76 @@ mod tests {
         assert_eq!(exe_name(&app()), "PhotoTool.exe");
         assert!(same_path(Path::new(r"C:\Scratch\A\b.exe"), Path::new("c:/scratch/a/B.EXE")));
         assert!(!same_path(Path::new(r"C:\scratch\a.exe"), Path::new(r"C:\scratch\b.exe")));
+    }
+
+    /// Adds a library to the installed app and loads it, the way a process that isn't the app's own
+    /// program holds one (a helper the app started, another program that uses it): the library can
+    /// then be renamed with its folders, but not deleted. The app itself is not running.
+    fn load_helper(places: &Places) -> LoadedLibrary {
+        load_library(&places.apps.join("PhotoTool").join("helper.dll"))
+    }
+
+    #[test]
+    fn updates_while_a_running_process_has_a_library_of_the_old_copy_loaded() {
+        let tmp = tempfile::tempdir().unwrap();
+        let places = Places::under(&tmp.path().join("home"));
+        install_sample(tmp.path(), &places, "0.5.0", "old").unwrap();
+        let loaded = load_helper(&places);
+        // The new version is in place, so the update worked, though the old copy can't be deleted yet.
+        let (record, old) = install_sample_over(tmp.path(), &places, "0.5.1", "new").unwrap();
+        assert_eq!((record.version.as_str(), old), ("0.5.1", OldCopy::InUse));
+        assert_eq!(installed_version(&places).as_deref(), Some("0.5.1"));
+        let dir = places.apps.join("PhotoTool");
+        assert_eq!(names(&dir), ["LICENSE", "PhotoTool.exe", "docs"], "old files must not survive an update");
+        // Only the loaded file stays, and not as a backup to put back.
+        let work = places.apps.join(".open3d-phototool");
+        assert_eq!(files_under(&work), ["helper.dll"]);
+        assert!(!work.join("backup").exists());
+        // It doesn't hold up the next update either.
+        let (_, old) = install_sample_over(tmp.path(), &places, "0.5.2", "newer").unwrap();
+        assert_eq!(old, OldCopy::InUse);
+        assert_eq!(installed_version(&places).as_deref(), Some("0.5.2"));
+        assert_eq!(files_under(&work), ["helper.dll"]);
+        // Once that process has ended the leftovers go, and the installed version stays.
+        drop(loaded);
+        assert_eq!(recover(&app(), &places.apps), Ok(OldCopy::Gone));
+        assert_eq!(installed_version(&places).as_deref(), Some("0.5.2"));
+        assert_eq!(names(&places.apps), ["PhotoTool"]);
+    }
+
+    #[test]
+    fn uninstalls_while_a_running_process_has_a_library_loaded() {
+        let tmp = tempfile::tempdir().unwrap();
+        let places = Places::under(&tmp.path().join("home"));
+        let a = app();
+        let record = install_sample(tmp.path(), &places, "0.5.0", "old").unwrap();
+        let loaded = load_helper(&places);
+        // The app's folder and its shortcuts are gone, so the removal worked.
+        assert_eq!(remove(&a, &record.path, &places), Ok(OldCopy::InUse));
+        assert_eq!(names(&places.apps), [".open3d-phototool"]);
+        assert_eq!(files_under(&places.apps.join(".open3d-phototool")), ["helper.dll"]);
+        assert!(places.shortcuts.iter().all(|folder| !folder.join("PhotoTool.lnk").exists()), "the shortcuts of a removed app stay behind");
+        // Still loaded: a later look can't delete it either, and doesn't take it for a copy to put back.
+        assert_eq!(recover(&a, &places.apps), Ok(OldCopy::InUse));
+        assert_eq!(detect_in(&a, &places, &written_version), None, "a removed app came back");
+        // Installing again and removing that copy both work meanwhile.
+        let (record, old) = install_sample_over(tmp.path(), &places, "0.5.1", "new").unwrap();
+        assert_eq!(old, OldCopy::InUse);
+        assert_eq!(installed_version(&places).as_deref(), Some("0.5.1"));
+        assert_eq!(remove(&a, &record.path, &places), Ok(OldCopy::InUse));
+        assert_eq!(detect_in(&a, &places, &written_version), None);
+        // Once that process has ended nothing is left.
+        drop(loaded);
+        assert_eq!(recover(&a, &places.apps), Ok(OldCopy::Gone));
+        assert!(names(&places.apps).is_empty());
+    }
+
+    /// Only a copy still in use is worth a word: the Spanish catalog spells this sentence out after
+    /// each message it can follow.
+    #[test]
+    fn says_when_a_running_program_keeps_files_of_the_old_copy() {
+        let note = "A program that is still running keeps using files of the copy that was installed until it closes.";
+        assert_eq!(still_running_note(OldCopy::Gone), None);
+        assert_eq!(still_running_note(OldCopy::InUse), Some(note));
     }
 }

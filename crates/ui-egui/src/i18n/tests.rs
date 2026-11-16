@@ -219,6 +219,25 @@ fn spanish_locales_and_plurals_work() {
     assert_eq!(message(Lang::ES, "OpenTools updated to 0.5.0"), "OpenTools actualizada a 0.5.0");
 }
 
+/// A 3ds Max plug-in's job can end with a second sentence about processes that are still running
+/// (the backend's `max_bundle::still_running_note`). Each such message has a row of its own: the
+/// shorter row without the sentence would take it for part of the version.
+#[test]
+fn spanish_translates_the_note_about_processes_still_running() {
+    let note = "3ds Max processes still running in the background (batch or farm renders) keep what they had loaded until they restart.";
+    let nota = "Los procesos de 3ds Max que siguen en marcha en segundo plano (renders por lotes o de la granja) conservan lo que tenían cargado \
+                hasta que se reinicien.";
+    assert_eq!(message(Lang::ES, &format!("OpenTools updated to 0.6.0. {note}")), format!("OpenTools actualizada a 0.6.0. {nota}"));
+    assert_eq!(message(Lang::ES, &format!("OpenTools installed: 0.6.0. {note}")), format!("OpenTools instalada: 0.6.0. {nota}"));
+    assert_eq!(message(Lang::ES, &format!("OpenTools was removed. {note}")), format!("Se quitó OpenTools. {nota}"));
+    // A program of its own has its sentence too (the backend's `standalone::still_running_note`).
+    let note = "A program that is still running keeps using files of the copy that was installed until it closes.";
+    let nota = "Un programa que sigue abierto seguirá usando archivos de la copia que estaba instalada hasta que se cierre.";
+    assert_eq!(message(Lang::ES, &format!("OpenView updated to 0.3.0. {note}")), format!("OpenView actualizada a 0.3.0. {nota}"));
+    assert_eq!(message(Lang::ES, &format!("OpenView installed: 0.3.0. {note}")), format!("OpenView instalada: 0.3.0. {nota}"));
+    assert_eq!(message(Lang::ES, &format!("OpenView was removed. {note}")), format!("Se quitó OpenView. {nota}"));
+}
+
 // The parser.
 
 #[test]

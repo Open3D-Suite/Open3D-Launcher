@@ -30,6 +30,7 @@ pub mod self_update;
 pub mod single_instance;
 mod source;
 mod standalone;
+mod work_folder;
 
 pub use backend::NativeBackend;
 

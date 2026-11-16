@@ -4,6 +4,17 @@ What each version of the Open3D Launcher adds, newest first.
 
 ## In development
 
+- **Plug-ins update while 3ds Max renders in the background.** Windows won't delete a compiled plug-in
+  that a 3ds Max batch or farm render still has loaded. Updating or removing such a plug-in then put the
+  new version in place but was reported as failed, and later updates of it were refused until that render
+  ended. Now the update or removal finishes, and the launcher deletes what is left of the old copy later,
+  once nothing uses it. It also tells you when 3ds Max processes are still running in the background:
+  they keep what they had loaded until they restart. A 3ds Max you have open must still be closed first.
+- **The same for apps that are programs of their own.** Updating or removing one (OpenView, OpenGaussian,
+  OpenRef, OpenFarm) no longer ends as failed when another program still has one of its files loaded: the
+  new version is in place, or the app and its shortcuts are gone, and the launcher tells you that a program
+  still running keeps using files of the old copy until it closes. The app itself must still be closed
+  first.
 - **OpenFarm is in the launcher.** Install, update and open OpenFarm, a render farm for your own computers
   (3ds Max and Blender scenes on every machine of the studio). It is a program of its own. Launchers
   already installed see it through the signed catalog; this version also lists it without it.

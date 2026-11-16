@@ -457,12 +457,12 @@ impl NativeBackend {
                 shared.emit(Event::Progress { app: app.id.to_string(), phase: JobPhase::Removing });
                 let mut phase = |phase| shared.emit(Event::Progress { app: app.id.to_string(), phase });
                 match &existing {
-                    Some(inst) => install::uninstall(app, inst, record.as_ref(), &paths, &stop, &mut phase).map(|()| {
+                    Some(inst) => install::uninstall(app, inst, record.as_ref(), &paths, &stop, &mut phase).map(|note| {
                         let mut m = shared.manifest.lock().unwrap_or_else(PoisonError::into_inner);
                         if m.apps.remove(app.id).is_some() {
                             let _ = m.save(&paths.manifest());
                         }
-                        format!("{} was removed", app.name)
+                        with_note(format!("{} was removed", app.name), note)
                     }),
                     None => Err(format!("{} isn't installed", app.name)),
                 }
@@ -689,7 +689,7 @@ fn run_install(
         *manifest = updated;
         Ok(())
     };
-    let new_record = install::install_at(app, &release, &asset, kind, existing, record, &mut job, Some(&mut commit_record))?;
+    let (new_record, note) = install::install_at(app, &release, &asset, kind, existing, record, &mut job, Some(&mut commit_record))?;
     {
         let mut m = shared.manifest.lock().unwrap_or_else(PoisonError::into_inner);
         let changed = match new_record {
@@ -704,7 +704,7 @@ fn run_install(
             log::warn!("couldn't save the install record: {e}");
         }
     }
-    Ok(installed_text(app, existing.is_some(), &release))
+    Ok(with_note(installed_text(app, existing.is_some(), &release), note))
 }
 
 /// Whether an install may write over what is at its destination.
@@ -734,6 +734,15 @@ fn replace_consent<'a>(occupied: Option<&'a std::path::Path>, approved: Option<&
 fn installed_text(app: &SuiteApp, update: bool, release: &Release) -> String {
     let verb = if update { "updated to" } else { "installed:" };
     format!("{} {verb} {}", app.name, release.version_label())
+}
+
+/// A finished job's message with what else the user should hear (see [`install::Note`]). The UI
+/// translates the whole text, so each message that can carry a note has a row of its own with it.
+fn with_note(text: String, note: install::Note) -> String {
+    match note {
+        Some(note) => format!("{text}. {note}"),
+        None => text,
+    }
 }
 
 /// For the launcher's own update, before it replaces itself: waits (saying so through `waiting`)

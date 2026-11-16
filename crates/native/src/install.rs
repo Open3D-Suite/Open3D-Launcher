@@ -43,6 +43,9 @@ pub(crate) enum Downgrade {
 
 type RecordCommit<'a> = Option<&'a mut dyn FnMut(&Record) -> Result<(), String>>;
 
+/// Something the user should hear along with the news that an install or a removal worked.
+pub(crate) type Note = Option<&'static str>;
+
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install_at(
     app: &SuiteApp,
@@ -53,7 +56,7 @@ pub(crate) fn install_at(
     previous: Option<&Record>,
     job: &mut Job<'_>,
     commit: RecordCommit<'_>,
-) -> Result<Option<Record>, String> {
+) -> Result<(Option<Record>, Note), String> {
     #[cfg(windows)]
     let _commit = commit;
     let _destination = destination(app, kind, existing, previous, job.install_locations)?;
@@ -92,8 +95,12 @@ pub(crate) fn install_at(
     let result = match kind {
         _ if !app.kinds().contains(&kind) => Err(format!("{} isn't installed from a {}", app.name, kind.label())),
         PackageKind::Msi | PackageKind::PortableZip => Err(format!("{} isn't installed from a {}", app.name, kind.label())),
-        PackageKind::MaxBundle => crate::max_bundle::install(app, &file, &version).map(Some),
-        PackageKind::AppZip => crate::standalone::install(app, &file, &version).map(Some),
+        PackageKind::MaxBundle => {
+            crate::max_bundle::install(app, &file, &version).map(|(record, old)| (Some(record), crate::max_bundle::still_running_note(old)))
+        }
+        PackageKind::AppZip => {
+            crate::standalone::install(app, &file, &version).map(|(record, old)| (Some(record), crate::standalone::still_running_note(old)))
+        }
     };
     match &result {
         Ok(_) => log::info!("{}: successfully installed/updated to {}", app.name, release.version_label()),
@@ -406,25 +413,27 @@ pub(crate) fn uninstall(
     paths: &Paths,
     stop: &Stop,
     phase: &mut dyn FnMut(JobPhase),
-) -> Result<(), String> {
+) -> Result<Note, String> {
     let _ = (record, stop, &phase, paths);
     let path = PathBuf::from(&installed.location);
     // A standalone app is found by its own program, whoever installed it, and says itself whether
     // that program is running.
+    let remove_program = || crate::standalone::uninstall(app, &path).map(crate::standalone::still_running_note);
     if app.is_standalone() {
-        return crate::standalone::uninstall(app, &path);
+        return remove_program();
     }
     if matches!(installed.source, InstallSource::Launcher) && process::is_running(&path) {
         return Err(format!("{} is running. Quit it, then try again.", app.name));
     }
+    let remove_bundle = || crate::max_bundle::uninstall(app, &path).map(crate::max_bundle::still_running_note);
     match installed.source {
         #[cfg(windows)]
         InstallSource::Launcher if record.is_some_and(|r| r.kind == PackageKind::PortableZip) => {
-            crate::portable::remove(app, record.ok_or("the launcher has no record of these files")?)
+            crate::portable::remove(app, record.ok_or("the launcher has no record of these files")?).map(|()| None)
         }
-        InstallSource::Bundle => crate::max_bundle::uninstall(app, &path),
-        InstallSource::AppFolder => crate::standalone::uninstall(app, &path),
-        InstallSource::Launcher if record.is_some_and(|r| r.kind == PackageKind::MaxBundle) => crate::max_bundle::uninstall(app, &path),
+        InstallSource::Bundle => remove_bundle(),
+        InstallSource::AppFolder => remove_program(),
+        InstallSource::Launcher if record.is_some_and(|r| r.kind == PackageKind::MaxBundle) => remove_bundle(),
         #[cfg(windows)]
         // A tarball the launcher unpacked into its own folder: take the tree out and leave the
         // app's settings (`home/`) alone, so a reinstall finds its projects where they were.
