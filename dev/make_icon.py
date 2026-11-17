@@ -72,7 +72,7 @@ def write_ico(path, images):
     header = struct.pack("<HHH", 0, 1, len(pngs))
     offset = 6 + 16 * len(pngs)
     entries = b""
-    for img, data in zip(images, pngs):
+    for img, data in zip(images, pngs, strict=True):
         side = img.width()
         dim = 0 if side >= 256 else side  # 0 means 256 in the ICO format
         entries += struct.pack("<BBBBHHII", dim, dim, 0, 0, 1, 32, len(data), offset)

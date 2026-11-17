@@ -55,7 +55,8 @@ class PublishError(Exception):
 
 
 def run(cmd, cwd=None, binary=False):
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=not binary)
+    # The commands are built by this script from fixed program names, never from outside input.
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=not binary)  # noqa: S603
     if result.returncode != 0:
         err = result.stderr if not binary else result.stderr.decode("utf-8", "replace")
         raise PublishError("Command failed: %s\n%s" % (" ".join(map(str, cmd)), (err or "").strip()))
@@ -209,7 +210,8 @@ def publish_app(app_id, version=None, dry_run=False, prebuilt=False):
         return
 
     repo = app["repo"]
-    exists = subprocess.run([gh(), "release", "view", tag, "--repo", repo], capture_output=True).returncode == 0
+    view = [gh(), "release", "view", tag, "--repo", repo]
+    exists = subprocess.run(view, capture_output=True).returncode == 0  # noqa: S603 - fixed command
     upload_dir = Path(tempfile.mkdtemp(prefix="open3d-upload-"))
     try:
         named_sums = upload_dir / "SHA256SUMS.txt"
@@ -322,8 +324,9 @@ def publish_launcher(dry_run=False):
     out = DIST / "release" / version
     env = dict(os.environ, DIST=str(out), CARGO_TARGET_DIR=cargo_target_dir())
     print("Open3D Launcher %s: building the MSI and the portable zip" % version)
-    result = subprocess.run(
-        [
+    # Windows PowerShell is found through PATH on purpose: it is part of Windows.
+    result = subprocess.run(  # noqa: S603
+        [  # noqa: S607
             "powershell",
             "-NoProfile",
             "-ExecutionPolicy",
