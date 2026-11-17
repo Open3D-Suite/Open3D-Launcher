@@ -131,7 +131,9 @@ def changelog_section(path, version):
 
 def zip_bundle(bundle_dir, bundle_name, zip_path, license_file):
     """The bundle folder at the zip's root, with the app's LICENSE inside it (the GPL text travels with it)."""
-    files = sorted(p for p in bundle_dir.rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc")
+    files = sorted(
+        p for p in bundle_dir.rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
+    )
     if zip_path.exists():
         zip_path.unlink()
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
@@ -215,8 +217,21 @@ def publish_app(app_id, version=None, dry_run=False, prebuilt=False):
         if not exists:
             notes_file = upload_dir / "notes.md"
             notes_file.write_text(notes + "\n", encoding="utf-8")
-            run([gh(), "release", "create", tag, "--repo", repo, "--verify-tag", "--title", "%s %s" % (app["name"], version),
-                 "--notes-file", str(notes_file)])
+            run(
+                [
+                    gh(),
+                    "release",
+                    "create",
+                    tag,
+                    "--repo",
+                    repo,
+                    "--verify-tag",
+                    "--title",
+                    "%s %s" % (app["name"], version),
+                    "--notes-file",
+                    str(notes_file),
+                ]
+            )
             print("  release %s created in %s" % (tag, repo))
         run([gh(), "release", "upload", tag, str(zip_path), str(named_sums), "--repo", repo, "--clobber"])
     finally:
@@ -234,7 +249,21 @@ def sign(path):
         shutil.copyfile(path, local)
         shutil.copyfile(PUBLIC_KEY, pub)
         run([openssl(), "pkeyutl", "-sign", "-inkey", str(SIGNING_KEY), "-rawin", "-in", str(local), "-out", str(raw)])
-        run([openssl(), "pkeyutl", "-verify", "-pubin", "-inkey", str(pub), "-rawin", "-in", str(local), "-sigfile", str(raw)])
+        run(
+            [
+                openssl(),
+                "pkeyutl",
+                "-verify",
+                "-pubin",
+                "-inkey",
+                str(pub),
+                "-rawin",
+                "-in",
+                str(local),
+                "-sigfile",
+                str(raw),
+            ]
+        )
         sig = __import__("base64").b64encode(raw.read_bytes()).decode("ascii")
     Path(str(path) + ".sig").write_bytes((sig + "\n").encode("ascii"))
 
@@ -293,11 +322,25 @@ def publish_launcher(dry_run=False):
     out = DIST / "release" / version
     env = dict(os.environ, DIST=str(out), CARGO_TARGET_DIR=cargo_target_dir())
     print("Open3D Launcher %s: building the MSI and the portable zip" % version)
-    result = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-                             str(LAUNCHER / "packaging" / "windows" / "package.ps1"), "-Arch", "x64"], env=env)
+    result = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(LAUNCHER / "packaging" / "windows" / "package.ps1"),
+            "-Arch",
+            "x64",
+        ],
+        env=env,
+    )
     if result.returncode != 0:
         raise PublishError("package.ps1 failed")
-    assets = [out / ("open3d-launcher-%s-windows-x64.msi" % version), out / ("open3d-launcher-%s-windows-x64-portable.zip" % version)]
+    assets = [
+        out / ("open3d-launcher-%s-windows-x64.msi" % version),
+        out / ("open3d-launcher-%s-windows-x64-portable.zip" % version),
+    ]
     for a in assets:
         if not a.is_file():
             raise PublishError("package.ps1 made no %s" % a.name)
@@ -318,8 +361,24 @@ def publish_launcher(dry_run=False):
     run(git + ["push", "origin", "main", tag])
     notes_file = out / "notes.md"
     notes_file.write_text(notes + "\n", encoding="utf-8")
-    run([gh(), "release", "create", tag, "--repo", "carlesllavata/Open3D", "--verify-tag", "--latest",
-         "--title", "Open3D Launcher %s" % version, "--notes-file", str(notes_file)] + [str(a) for a in assets] + [str(sums)])
+    run(
+        [
+            gh(),
+            "release",
+            "create",
+            tag,
+            "--repo",
+            "carlesllavata/Open3D",
+            "--verify-tag",
+            "--latest",
+            "--title",
+            "Open3D Launcher %s" % version,
+            "--notes-file",
+            str(notes_file),
+        ]
+        + [str(a) for a in assets]
+        + [str(sums)]
+    )
     print("  release %s created in carlesllavata/Open3D" % tag)
 
 
