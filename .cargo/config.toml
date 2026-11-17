@@ -1,2 +1,6 @@
+# Machine-local settings (for example, a target directory on a local disk) go in
+# .cargo/config.local.toml, which Git ignores.
+include = [{ path = "config.local.toml", optional = true }]
+
 [alias]
 xtask = "run -p xtask --"
