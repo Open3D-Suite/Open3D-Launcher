@@ -1,17 +1,22 @@
-* text=auto
-
-# Windows-only scripts keep CRLF in the working tree
+# OPEN3D common rules. This block is the same in every OPEN3D repository.
+# Text files are stored and checked out with LF; only Windows scripts use CRLF.
+* text=auto eol=lf
 *.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
 
 *.png binary
+*.jpg binary
+*.bmp binary
 *.ico binary
+*.ttf binary
 *.zip binary
+*.mzp binary
 
-# Signatures cover exact bytes: never convert these to CRLF.
+# Specific to this repository.
+*.sig -text
+
+# Signatures cover exact bytes: Git must never convert these.
 /launcher-catalog.toml -text
 /crates/core/catalog.toml -text
 /crates/core/tests/fixtures/hosted-catalog.toml -text
-*.sig -text
-*.png binary
-*.ttf binary
-*.bmp binary
