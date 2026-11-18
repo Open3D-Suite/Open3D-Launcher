@@ -22,7 +22,9 @@ as a change that makes it old.
   - `cargo fmt --all --check`
   - `cargo clippy --workspace --all-targets --locked -- -D warnings`
   - `cargo test --workspace --locked` (4 tests are ignored: 2 need the network, 2 are started by another)
-  - `ruff format --check .` and `ruff check .`, for `tools/publish.py` and `dev/make_icon.py`
+  - `ruff format --check .` and `ruff check .`, for the Python files in `tools/` and `dev/make_icon.py`
+  - `python -m unittest` from the root: `tools/test_publish.py`, which runs no command (no network, no
+    git, no gh) and is found because `tools/` has an `__init__.py`
 - `.editorconfig`, `.gitattributes`, `rustfmt.toml`, `clippy.toml` and `ruff.toml` are the same in every
   Open3D repo. Do not change them here. This repo's own part: `disallowed-types` in `clippy.toml`, and in
   `.gitattributes` the lines below `# Specific to this repository.`: Git never converts the signed files.

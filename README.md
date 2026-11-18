@@ -130,6 +130,9 @@ Each takes `--dry-run` to build without committing, tagging or uploading anythin
 compiled plug-in (OpenScatter), `app <id> --prebuilt` then uploads the very zip that dry run built, once it
 has been tested: two builds of a compiled plug-in are never the same bytes.
 
+`python -m unittest`, from the repository's root, runs the script's tests (`tools\test_publish.py`): they
+check what it would send out, and run no command.
+
 ## Repository layout
 
 | path | what it is |
