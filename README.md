@@ -111,20 +111,24 @@ The MSI and the portable zip are made by `packaging\windows\package.ps1`, which 
 ### Publishing (maintainers)
 
 `tools\publish.py`, run with the Python that ships with 3ds Max (`python -I tools\publish.py ...`), needs
-the GitHub CLI:
+the GitHub CLI. It never pushes and never publishes a release: where GitHub lacks a commit or a tag it
+stops and prints the `git push` to run, and every release it makes is a draft, which the maintainer
+publishes on GitHub. It never changes a release that is already published.
 
-- `app <id>`: builds `<id>-<version>-windows-x64-3dsmax.zip` from a 3ds Max app's latest `vX.Y.Z` tag and
-  attaches it, with `SHA256SUMS.txt`, to that app's GitHub release (`tools\apps.json` lists those apps). A
-  standalone app builds and publishes its own zip from its repository.
+- `app <id>`: builds `<id>-<version>-windows-x64-3dsmax.zip` from a 3ds Max app's latest `vX.Y.Z` tag and,
+  once that tag is pushed, attaches it, with `SHA256SUMS.txt`, to a draft of that app's GitHub release
+  (`tools\apps.json` lists those apps). A standalone app builds and publishes its own zip from its
+  repository.
 - `catalog`: signs `crates\core\catalog.toml` as `launcher-catalog.toml` + `.sig` with the maintainer's
-  private key (never in this repository) and publishes the app icons. Only needed when the list of apps
-  changes.
-- `launcher`: builds the MSI and the portable zip, tags `vX.Y.Z` and creates this repository's release
-  with the version's CHANGELOG section.
+  private key (never in this repository), copies the app icons into `launcher-app-icons\` and commits.
+  Launchers read them once that commit is pushed to `main`. Only needed when the list of apps changes.
+- `launcher`: builds the MSI and the portable zip and tags the commit with the annotated tag `vX.Y.Z`.
+  Run again once `main` and that tag are pushed, it builds again and makes a draft of this repository's
+  release with the version's CHANGELOG section.
 
-Each takes `--dry-run` to build without uploading anything. For an app with a compiled plug-in
-(OpenScatter), `app <id> --prebuilt` then uploads the very zip that dry run built, once it has been tested:
-two builds of a compiled plug-in are never the same bytes.
+Each takes `--dry-run` to build without committing, tagging or uploading anything. For an app with a
+compiled plug-in (OpenScatter), `app <id> --prebuilt` then uploads the very zip that dry run built, once it
+has been tested: two builds of a compiled plug-in are never the same bytes.
 
 ## Repository layout
 

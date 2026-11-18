@@ -26,5 +26,5 @@ license file next to them.
 | Path | Title | Author | Source | License |
 |---|---|---|---|---|
 | `crates/core/assets/launcher-catalog-public-key.pem` | Launcher catalog Ed25519 verification key | Carles Llavata | Public half of the maintainer's catalog signing key (the private half is never in this repository) | GPL-3.0-or-later |
-| `crates/core/catalog.toml`, `launcher-catalog.toml` | Bundled and published launcher catalog | Carles Llavata | Written for Open3D; `launcher-catalog.toml` is the signed copy published by `tools/publish.py catalog` | GPL-3.0-or-later |
+| `crates/core/catalog.toml`, `launcher-catalog.toml` | Bundled and published launcher catalog | Carles Llavata | Written for Open3D; `launcher-catalog.toml` is the signed copy made by `tools/publish.py catalog` | GPL-3.0-or-later |
 | `launcher-catalog.toml.sig`, `crates/core/tests/fixtures/hosted-catalog.toml.sig` | Detached catalog signatures | Carles Llavata | Made with the maintainer's catalog signing key | GPL-3.0-or-later |

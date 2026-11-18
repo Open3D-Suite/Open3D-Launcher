@@ -35,6 +35,23 @@ as a change that makes it old.
   per-user MSI, whose UpgradeCode must be the one in `install-policy.json`, and the portable zip.
 - `publish.py app <id>` builds a 3ds Max app's zip from its latest `vX.Y.Z` tag (`tools/apps.json`);
   `publish.py catalog` signs `crates/core/catalog.toml` as `launcher-catalog.toml` and `.sig`.
+- `tools/publish.py` never pushes and never publishes a release. With `--dry-run` it also commits, tags and
+  uploads nothing. Without it:
+  - `launcher` builds, then tags HEAD with the annotated tag `vX.Y.Z`. While `git ls-remote origin` shows
+    no such tag, or a `main` without that commit, it stops and prints `git push origin main` and
+    `git push origin vX.Y.Z`. Run again with both there, it builds again and makes the release of
+    `carlesllavata/Open3D` as a draft, with the MSI, the portable zip and `SHA256SUMS.txt`.
+  - `app <id>` stops and prints `git push origin vX.Y.Z` while the app's `origin` has no such tag. With the
+    tag there, it puts the zip and `SHA256SUMS.txt` in a draft release of the app's repo.
+  - `catalog` commits the signed files, and prints `git push origin main` while `origin`'s `main` lacks
+    that commit.
+  - A release it makes is a draft, never marked as the latest. A draft that exists gets its files replaced.
+    On a release that is already published it stops and uploads nothing.
+  - It stops on a tag `vX.Y.Z` of this repo that is not annotated or not on HEAD, and on a tag that `origin`
+    has as another object than the checkout. It deletes and moves no tag.
+  - Every command it runs goes through `call`, where `refuse_unsafe` stops a `git push`, a deleted or
+    forced tag, a `gh api` with any option but `--jq`, and a `gh release` that edits, deletes, or creates
+    without `--draft` or with `--latest`.
 
 ## Rules of this code
 
@@ -54,7 +71,9 @@ as a change that makes it old.
 
 ## Traps
 
-- Without `--dry-run`, `tools/publish.py` creates a published release (not a draft) and pushes by itself.
+- A release made by `tools/publish.py` is a draft: launchers see that version only once the draft is
+  published on GitHub. Its exit code is 0 too when it stops to wait for a push.
+- `publish.py launcher` builds twice, before the push and after it: the release carries the second build.
 - Installed launchers read the signed catalog from this repo's `main` branch at every start.
 - Adding an app: its entry in `crates/core/catalog.toml`, `assets/app-icons/<id>.png` and its line in
   `catalog::app_icon_png`, its `es.tsv` rows, `tools/apps.json` (3ds Max apps only), and the catalog signed
