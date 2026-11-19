@@ -29,6 +29,8 @@ as a change that makes it old.
   - `cargo test --workspace --locked` (4 tests are ignored: 2 need the network, 2 are started by another)
   - only with `tools\check.ps1 -Full`: the ignored test of the live signed catalog. The other network test
     reads `carlesllavata/wordtool`, which does not exist, and is left out.
+- CI: `.github/workflows/check.yml` runs `tools\check.ps1`, without `-Full`, on every push and pull request
+  to `main`, on GitHub's Windows runner with Python 3.14.
 - `cargo xtask ci` runs fmt, clippy and the tests, with `--locked`.
 - `.editorconfig`, `.gitattributes`, `rustfmt.toml`, `clippy.toml`, `ruff.toml`, `LICENSE`, `tools/check.ps1`
   and `tools/repo.py` are the same in every Open3D repo. Do not change them here. This repo's own part:
