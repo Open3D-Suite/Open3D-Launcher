@@ -33,7 +33,8 @@ as a change that makes it old.
   to `main`, on GitHub's Windows runner with Python 3.14.
 - `cargo xtask ci` runs fmt, clippy and the tests, with `--locked`.
 - `.editorconfig`, `.gitattributes`, `rustfmt.toml`, `clippy.toml`, `ruff.toml`, `LICENSE`, `tools/check.ps1`
-  and `tools/repo.py` are the same in every Open3D repo. Do not change them here. This repo's own part:
+  and `tools/repo.py` are the same in every Open3D repo, and `crates/ui-egui/src/open3d_settings.rs` with
+  `open3d_settings_cases.txt` the same in every repo that has them. Do not change them here. This repo's own part:
   `disallowed-types` in `clippy.toml`, and in `.gitattributes` the lines below
   `# Specific to this repository.`: Git never converts the signed files.
 
@@ -74,7 +75,16 @@ as a change that makes it old.
   in the repo. It can add apps, but not change the name, repo, package or exe of a built-in one.
 - Interface texts are English in the code (`t`, `tl!`, `tn`), with their Spanish in `es.tsv`. The test for
   missing rows reads a fixed list of files; `versions.rs` and `theme.rs` are not on it.
-- `unsafe` is forbidden in the workspace; outside tests every crate denies `unwrap`, `expect` and `panic`.
+- The language is the one every Open3D app shares, in `settings.json` (`open3d_settings.rs`): in
+  `%APPDATA%\Open3D`, in the folder `OPEN3D_SETTINGS_DIR` names, or, for a portable launcher, in
+  `Open3DLauncherData`, which it also gives as `OPEN3D_SETTINGS_DIR` to the programs it opens. At start
+  `Settings::take_shared_language` puts its preference in `Settings.language`, or with none carries the
+  launcher's own `en` or `es` over once (`language_shared`), or leaves `auto`. `auto` is the language of
+  Windows: Spanish if it is Spanish, else English; `OPEN3D_LAUNCHER_LOCALE` overrides it. The language
+  picker writes the file (`LauncherUi::choose_language`; `auto` removes the key).
+- `unsafe` is forbidden in the workspace but for `crates/ui-egui`, where it is denied and allowed by name
+  only in `open3d_settings.rs`, to ask Windows for its language. Outside tests every crate denies `unwrap`,
+  `expect` and `panic`.
 - It comes from ArtCraft Launcher (MIT or Apache-2.0): `NOTICE` and `LICENSES/` say what comes from where.
 
 ## Traps

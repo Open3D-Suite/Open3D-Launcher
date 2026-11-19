@@ -3541,7 +3541,6 @@ dependencies = [
  "serde",
  "serde_json",
  "skrifa",
- "sys-locale",
  "wasm-bindgen",
 ]
 

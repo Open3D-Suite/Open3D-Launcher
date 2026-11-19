@@ -30,6 +30,8 @@ mod local_time;
 pub mod model;
 mod motion;
 mod notes;
+// The language shared by every Open3D app: a copy of a common file, which calls Windows itself.
+pub mod open3d_settings;
 pub mod settings;
 mod settings_dialog;
 mod sheet;

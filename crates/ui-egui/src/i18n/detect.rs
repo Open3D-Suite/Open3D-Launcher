@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Working out the system language: the OS's preferred UI languages on the desktop, the
-//! browser's on the web.
+//! Working out the system language: the language of Windows on the desktop, the browser's on the
+//! web. It is the language shown while no Open3D app holds a language preference (`auto`).
 
 use std::sync::OnceLock;
 
@@ -51,17 +51,15 @@ pub(super) fn first_supported<'a>(tags: impl IntoIterator<Item = &'a str>) -> Op
     tags.into_iter().find_map(lang_from_tag)
 }
 
-/// `OPEN3D_LAUNCHER_LOCALE` overrides everything; then the OS's preferred UI languages
-/// (`sys-locale`: `LANGUAGE`/`LC_*`/`LANG` on Linux and the BSDs, the preferred-languages list on
-/// macOS, which apps opened from the Finder need since they inherit no `LANG`, and the user's UI
-/// languages on Windows).
+/// `OPEN3D_LAUNCHER_LOCALE` (a debug and test override, a `:`-separated list of locale tags)
+/// overrides everything; then the language of Windows, as every Open3D app reads it (D-052):
+/// Spanish when the user's interface language is Spanish, English otherwise.
 #[cfg(not(target_arch = "wasm32"))]
 fn detect_system_lang() -> Lang {
     if let Some(l) = std::env::var("OPEN3D_LAUNCHER_LOCALE").ok().and_then(|v| first_supported(v.split(':'))) {
         return l;
     }
-    let locales: Vec<String> = sys_locale::get_locales().collect();
-    first_supported(locales.iter().map(String::as_str)).unwrap_or(Lang::EN)
+    Lang::from_code(crate::open3d_settings::windows_language().code()).unwrap_or(Lang::EN)
 }
 
 /// The browser's languages arrive through [`set_system_locales`]; without them, English.

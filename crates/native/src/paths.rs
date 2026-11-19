@@ -87,9 +87,35 @@ pub fn portable_root() -> Option<PathBuf> {
     dir.join("portable.txt").is_file().then(|| dir.join("Open3DLauncherData"))
 }
 
+/// The variable that names the folder of `settings.json`, the language every Open3D app shares,
+/// in place of `%APPDATA%\Open3D`.
+pub const SHARED_SETTINGS_VARIABLE: &str = "OPEN3D_SETTINGS_DIR";
+
+/// Where a portable launcher keeps the language every Open3D app shares: in its own data folder,
+/// so a suite carried on a stick keeps it and writes nothing into the profile of the computer it
+/// is plugged into. The programs it opens are told so. `None` for a launcher that is installed, or
+/// when `OPEN3D_SETTINGS_DIR` already names a folder: then it is the one every app uses.
+pub fn portable_settings_dir() -> Option<PathBuf> {
+    settings_dir_of(std::env::var_os(SHARED_SETTINGS_VARIABLE), portable_root())
+}
+
+fn settings_dir_of(named: Option<std::ffi::OsString>, portable: Option<PathBuf>) -> Option<PathBuf> {
+    if named.is_some_and(|dir| !dir.is_empty()) { None } else { portable }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_portable_launcher_keeps_the_shared_language_in_its_own_folder() {
+        let portable = PathBuf::from("Suite").join("Open3DLauncherData");
+        assert_eq!(settings_dir_of(None, Some(portable.clone())), Some(portable.clone()));
+        assert_eq!(settings_dir_of(Some("".into()), Some(portable.clone())), Some(portable.clone()));
+        // A folder the variable names wins; an installed launcher uses the computer's file.
+        assert_eq!(settings_dir_of(Some("Elsewhere".into()), Some(portable)), None);
+        assert_eq!(settings_dir_of(None, None), None);
+    }
 
     #[test]
     fn atomic_write_does_not_overwrite_an_unrelated_temporary_file() {

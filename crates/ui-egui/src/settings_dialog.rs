@@ -116,9 +116,10 @@ impl LauncherUi {
         );
     }
 
-    /// The language picker. It changes the preference immediately but keeps this pass on a language
-    /// that can be drawn now; a CJK face is installed by the next pass's font gate. When that face
-    /// is unavailable, an English-only notice explains why the interface stays English.
+    /// The language picker. It changes the preference immediately, for every Open3D app
+    /// ([`Self::choose_language`]), but keeps this pass on a language that can be drawn now; a
+    /// CJK face is installed by the next pass's font gate. When that face is unavailable, an
+    /// English-only notice explains why the interface stays English.
     fn settings_language(&mut self, ui: &mut Ui) {
         let _t = Tokens::get(ui.ctx());
         let mut lang_code = self.settings.language.clone();
@@ -137,8 +138,7 @@ impl LauncherUi {
                 .labelled_by(heading);
         });
         if lang_code != self.settings.language {
-            self.settings.language = lang_code;
-            crate::i18n::set_current(crate::i18n::Lang::from_pref(&self.settings.language));
+            self.choose_language(lang_code);
             ui.ctx().request_repaint();
         }
     }

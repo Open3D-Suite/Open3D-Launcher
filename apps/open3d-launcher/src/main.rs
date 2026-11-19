@@ -22,9 +22,9 @@ use eframe::wgpu::rwh::{HasDisplayHandle, RawDisplayHandle};
 use open3d_launcher_core::protocol::Backend;
 use open3d_launcher_native::single_instance::{self, Instance};
 use open3d_launcher_native::{NativeBackend, login};
-use open3d_launcher_ui_egui::i18n;
 use open3d_launcher_ui_egui::theme::Tokens;
 use open3d_launcher_ui_egui::{Host, LauncherUi, Settings, TitleBar};
+use open3d_launcher_ui_egui::{i18n, open3d_settings};
 
 const APP_ID: &str = "io.github.carlesllavata.open3d-launcher";
 const SETTINGS_KEY: &str = "settings";
@@ -137,7 +137,8 @@ fn main() -> ExitCode {
                     log::warn!("the window didn't start: {e}; trying {next:?} instead");
                     continue;
                 }
-                report_startup_failure(attempt, &e, startup_language(saved_settings(settings_path.as_deref())));
+                let language = startup_language(saved_settings(settings_path.as_deref()), shared_settings_dir().as_deref());
+                report_startup_failure(attempt, &e, language);
                 return ExitCode::FAILURE;
             }
             if !std::mem::take(&mut launcher.closed_to_tray) {
@@ -273,13 +274,25 @@ fn saved_settings(path: Option<&Path>) -> Option<Settings> {
 ///
 /// The UI's language is set per frame from the saved preference (`LauncherUi::logic` calls
 /// `i18n::set_current`), so a start that never got a frame has set nothing and `i18n::current()`
-/// is still English: the dialog would answer a German user in English. Read the preference itself
-/// instead.
+/// is still English: the dialog would answer a Spanish user in English. Read the preference itself
+/// instead: the one every Open3D app shares, in `shared`, else the launcher's own while it has not
+/// been handed over, without writing anything.
 ///
 /// It is used as saved, without the UI's CJK-font gate (`effective_lang`): this dialog is a native
 /// one, drawn with the system's own faces, so a language egui could not have drawn is readable.
-fn startup_language(saved: Option<Settings>) -> i18n::Lang {
-    saved.map(|settings| i18n::Lang::from_pref(&settings.language)).unwrap_or_else(i18n::current)
+fn startup_language(saved: Option<Settings>, shared: Option<&Path>) -> i18n::Lang {
+    if let Some(language) = shared.and_then(open3d_settings::read_language) {
+        return i18n::Lang::from_code(language.code()).unwrap_or(i18n::Lang::EN);
+    }
+    let own = |settings: Settings| i18n::Lang::from_pref(if settings.language_shared { Settings::LANGUAGE_AUTO } else { &settings.language });
+    saved.map(own).unwrap_or_else(i18n::current)
+}
+
+/// The folder of `settings.json`, the language every Open3D app shares (D-055): a portable
+/// launcher's own data folder (`paths::portable_settings_dir`), otherwise the one
+/// `OPEN3D_SETTINGS_DIR` names, otherwise `%APPDATA%\Open3D`.
+fn shared_settings_dir() -> Option<PathBuf> {
+    open3d_launcher_native::paths::portable_settings_dir().or_else(open3d_settings::settings_dir)
 }
 
 /// Tells the user why no window appeared: the backend that was tried and the error wgpu reported
@@ -666,13 +679,16 @@ impl Launcher {
         }
     }
 
-    /// Takes in the saved settings and puts up the tray icon. On macOS the tray icon needs the
-    /// event loop running, so this waits for the first window there.
+    /// Takes in the saved settings and the language every Open3D app shares, and puts up the tray
+    /// icon. On macOS the tray icon needs the event loop running, so this waits for the first
+    /// window there.
     fn start(&mut self, settings: Option<Settings>, waker: &Arc<Waker>) {
         self.started = true;
         if let Some(settings) = settings {
             self.restore_saved_settings(settings);
         }
+        self.ui.shared_settings_dir = shared_settings_dir();
+        self.ui.settings.take_shared_language(self.ui.shared_settings_dir.as_deref());
         self.waker = Some(waker.clone());
         let (wake, on_quit) = (waker.clone(), waker.clone());
         match tray::Tray::new(move || wake.wake(), move || on_quit.quit_from_tray()) {
@@ -969,6 +985,25 @@ mod tests {
         let missing = existing.join("open3d-launcher-does-not-exist-yet");
         assert_eq!(nearest_existing_folder(missing.to_str()), Some(existing.clone()));
         assert_eq!(nearest_existing_folder(existing.to_str()), Some(existing));
+    }
+
+    #[test]
+    fn the_startup_failure_dialog_speaks_the_shared_language() {
+        // A folder of its own, never the real %APPDATA%\Open3D; and a fixed language of Windows.
+        let dir = std::env::temp_dir().join(format!("open3d-launcher-startup-language-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        i18n::set_test_lang(i18n::Lang::EN);
+        let saved = |language: &str, language_shared| Some(Settings { language: language.into(), language_shared, ..Settings::default() });
+        // No preference yet: the launcher's own, while it has not been handed over; then Windows.
+        assert_eq!(startup_language(saved("es", false), Some(&dir)), i18n::Lang::ES);
+        assert_eq!(startup_language(saved("es", true), Some(&dir)), i18n::Lang::EN);
+        assert!(std::fs::create_dir_all(&dir).is_ok());
+        assert!(std::fs::write(dir.join(open3d_settings::FILE_NAME), r#"{"language":"es"}"#).is_ok());
+        assert_eq!(startup_language(saved("en", false), Some(&dir)), i18n::Lang::ES);
+        assert_eq!(startup_language(None, Some(&dir)), i18n::Lang::ES);
+        let left: Vec<_> = std::fs::read_dir(&dir).map(|entries| entries.flatten().map(|e| e.file_name()).collect()).unwrap_or_default();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(left, [open3d_settings::FILE_NAME], "reading writes nothing");
     }
 
     #[test]

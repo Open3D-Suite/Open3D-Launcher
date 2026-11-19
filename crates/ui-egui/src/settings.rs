@@ -2,11 +2,13 @@
 //! The user's choices, saved between runs by the shell.
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use open3d_launcher_core::PackageKind;
 use serde::{Deserialize, Serialize};
 
 use crate::i18n::t;
+use crate::open3d_settings;
 use crate::theme::ThemeChoice;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -94,9 +96,14 @@ pub struct Settings {
     pub sort: SortKey,
     pub sort_descending: bool,
     pub theme: ThemeChoice,
-    /// Interface language: `auto` (follow the system) or a language code from the registry
-    /// (`en`, `ru`, `zh-CN`, `de`, `fr`, `pt-BR`, `pl`).
+    /// Interface language: `auto` (follow Windows) or a language code from the registry (`en`,
+    /// `es`). The language shared by every Open3D app is the source (`open3d_settings`): at start
+    /// this takes its value ([`Self::take_shared_language`]), and a choice in Settings is written
+    /// there, `auto` as no preference.
     pub language: String,
+    /// The launcher's own `language` has been handed to the shared file (or there was nothing to
+    /// hand over), so it is never carried over again.
+    pub language_shared: bool,
     /// Closing the window keeps the launcher in the tray (menu bar) instead of quitting.
     pub close_to_tray: bool,
     /// macOS: showing the window brings it to the current desktop (Space) instead of switching to
@@ -203,6 +210,34 @@ impl Settings {
     pub fn language_label(code: &str) -> String {
         crate::i18n::Lang::from_code(code).map_or_else(|| t("Auto").to_string(), |lang| lang.name().to_string())
     }
+
+    /// Takes the language shared by every Open3D app in at start, from `settings.json` in `dir`
+    /// (D-051). Its preference becomes `language`. With none, a language the person chose here
+    /// before is written there once (D-048), unless the write fails, and then it is tried again at
+    /// the next start; otherwise `language` is `auto`, and Windows decides (D-052). Nothing is
+    /// written when there is nothing to carry over.
+    pub fn take_shared_language(&mut self, dir: Option<&Path>) {
+        if let Some(shared) = dir.and_then(open3d_settings::read_language) {
+            self.language = shared.code().to_string();
+            self.language_shared = true;
+            return;
+        }
+        if !self.language_shared
+            && let Some(own) = open3d_settings::Language::from_code(&self.language)
+        {
+            match dir.map(|dir| open3d_settings::write_language(dir, Some(own))) {
+                Some(Ok(())) => {
+                    log::info!("the launcher's language, {}, is now the one every Open3D app shares", own.code());
+                    self.language_shared = true;
+                }
+                Some(Err(e)) => log::warn!("couldn't carry the launcher's language over to the other Open3D apps: {e}"),
+                None => log::warn!("no folder for the language shared by the Open3D apps"),
+            }
+            return;
+        }
+        self.language_shared = true;
+        self.language = Self::LANGUAGE_AUTO.to_string();
+    }
 }
 
 impl Default for Settings {
@@ -215,6 +250,7 @@ impl Default for Settings {
             sort_descending: false,
             theme: ThemeChoice::System,
             language: "auto".to_string(),
+            language_shared: false,
             close_to_tray: true,
             show_on_current_desktop: true,
             check_every: CheckEvery::Hour,
@@ -291,6 +327,90 @@ mod tests {
         assert_eq!(s.pinned_neighbor("a", -1, any), None);
         assert_eq!(s.pinned_neighbor("c", 1, any), None);
         assert_eq!(s.pinned_neighbor("missing", 1, any), None);
+    }
+
+    /// A folder of its own for the shared `settings.json`, never the real `%APPDATA%\Open3D`.
+    struct Shared(std::path::PathBuf);
+
+    impl Shared {
+        fn new(name: &str) -> Self {
+            let dir = std::env::temp_dir().join(format!("open3d-launcher-shared-{name}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            Self(dir)
+        }
+        fn holding(name: &str, json: &str) -> Self {
+            let shared = Self::new(name);
+            std::fs::create_dir_all(&shared.0).unwrap();
+            std::fs::write(shared.0.join(open3d_settings::FILE_NAME), json).unwrap();
+            shared
+        }
+        fn file(&self) -> Option<String> {
+            std::fs::read_to_string(self.0.join(open3d_settings::FILE_NAME)).ok()
+        }
+    }
+
+    impl Drop for Shared {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn with_language(language: &str, language_shared: bool) -> Settings {
+        Settings { language: language.into(), language_shared, ..Settings::default() }
+    }
+
+    #[test]
+    fn the_shared_language_wins_over_the_launchers_own() {
+        let shared = Shared::holding("wins", r#"{"language":"es","theme":"dark"}"#);
+        for own in ["auto", "en", "es"] {
+            let mut settings = with_language(own, false);
+            settings.take_shared_language(Some(&shared.0));
+            assert_eq!((settings.language.as_str(), settings.language_shared), ("es", true), "{own}");
+        }
+        assert_eq!(shared.file().as_deref(), Some(r#"{"language":"es","theme":"dark"}"#), "reading writes nothing");
+    }
+
+    #[test]
+    fn a_language_chosen_here_is_carried_over_once() {
+        let shared = Shared::new("carried");
+        let mut settings = with_language("es", false);
+        settings.take_shared_language(Some(&shared.0));
+        assert_eq!((settings.language.as_str(), settings.language_shared), ("es", true));
+        assert_eq!(open3d_settings::read_language(&shared.0), Some(open3d_settings::Language::Spanish));
+        // Taken out later (Auto, here or in another app): the launcher's copy is not put back.
+        assert_eq!(open3d_settings::write_language(&shared.0, None), Ok(()));
+        settings.take_shared_language(Some(&shared.0));
+        assert_eq!((settings.language.as_str(), settings.language_shared), ("auto", true));
+        assert_eq!(open3d_settings::read_language(&shared.0), None);
+    }
+
+    #[test]
+    fn auto_carries_nothing_over_and_writes_nothing() {
+        let shared = Shared::new("auto");
+        let mut settings = with_language("auto", false);
+        settings.take_shared_language(Some(&shared.0));
+        assert_eq!((settings.language.as_str(), settings.language_shared), ("auto", true));
+        assert!(!shared.0.exists());
+    }
+
+    #[test]
+    fn a_carry_over_that_fails_is_tried_again_at_the_next_start() {
+        let shared = Shared::new("blocked");
+        // The folder is a file: nothing can be written in it.
+        std::fs::write(&shared.0, b"in the way").unwrap();
+        let mut settings = with_language("en", false);
+        settings.take_shared_language(Some(&shared.0));
+        assert_eq!((settings.language.as_str(), settings.language_shared), ("en", false));
+        std::fs::remove_file(&shared.0).unwrap();
+        settings.take_shared_language(Some(&shared.0));
+        assert_eq!((settings.language.as_str(), settings.language_shared), ("en", true));
+        assert_eq!(open3d_settings::read_language(&shared.0), Some(open3d_settings::Language::English));
+    }
+
+    #[test]
+    fn old_settings_have_not_handed_their_language_over() {
+        let s: Settings = serde_json::from_str(r#"{"language":"es"}"#).expect("settings of an older launcher");
+        assert_eq!((s.language.as_str(), s.language_shared), ("es", false));
     }
 
     #[test]

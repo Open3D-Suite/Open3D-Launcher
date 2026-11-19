@@ -2,6 +2,17 @@
 
 What each version of the Open3D Launcher adds, newest first.
 
+## In development
+
+- **One language for the launcher and the Open3D apps.** The language you choose in Settings is now the
+  one the Open3D apps use too (OpenRef for now, the others as they are updated): they show it the next time
+  they start. A language chosen in one of those apps shows here the next time the launcher starts. A
+  language you had already chosen in the launcher is kept and passed on to them.
+- **Auto follows the language Windows is shown in:** Spanish if Windows is in Spanish, English otherwise.
+  Choosing Auto also makes the Open3D apps follow Windows again.
+- **A portable launcher keeps that language in its own folder,** beside it, and the programs you open from
+  it use it too.
+
 ## 0.3.4 — 16 November 2026
 
 - **OpenScatter is in the launcher.** Install and update OpenScatter, a scatter for 3ds Max 2027: one

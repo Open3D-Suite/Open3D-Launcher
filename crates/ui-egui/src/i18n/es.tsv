@@ -246,6 +246,7 @@ filter	Installed	Instaladas
 @plural	{n} day ago|{n} days ago	hace {n} día|hace {n} días
 @msg	Couldn't open {name}: {e}	No se pudo abrir {name}: {e}
 @msg	Open3D Launcher couldn't start its window on {backend}: {e}	No se pudo iniciar la ventana de Open3D Launcher con {backend}: {e}
+@msg	Couldn't save the language for the other Open3D apps: {e}	No se pudo guardar el idioma para las demás aplicaciones de Open3D: {e}
 @msg	Download cancelled	Descarga cancelada
 @msg	{name} updated to {version}	{name} actualizada a {version}
 @msg	{name} installed: {version}	{name} instalada: {version}

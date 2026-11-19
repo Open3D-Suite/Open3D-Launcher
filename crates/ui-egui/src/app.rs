@@ -136,6 +136,10 @@ impl Dialog {
 pub struct LauncherUi {
     pub(crate) backend: Box<dyn Backend>,
     pub settings: Settings,
+    /// The folder of `settings.json`, the language every Open3D app shares, where a language chosen
+    /// in Settings is written. The desktop shell sets it; without it (the web build, the tests) a
+    /// choice stays in this launcher.
+    pub shared_settings_dir: Option<std::path::PathBuf>,
     pub(crate) entries: Vec<AppEntry>,
     pub(crate) caps: Capabilities,
     pub(crate) platform: Option<Platform>,
@@ -242,6 +246,7 @@ impl LauncherUi {
         Self {
             backend,
             settings,
+            shared_settings_dir: None,
             entries: open3d_launcher_core::hosted_catalog::apps().iter().map(AppEntry::new).collect(),
             caps,
             platform,
@@ -425,6 +430,29 @@ impl LauncherUi {
     /// installs and launches, so a discarded pass cannot show it twice.
     pub(crate) fn toast_from_ui(&mut self, text: impl Into<String>, error: bool) {
         self.act(UiAction::Toast { text: text.into(), error });
+    }
+
+    /// The person chose a language in Settings (`auto` or a code): the launcher shows it at once
+    /// and every Open3D app takes it the next time it starts (D-056, D-057), as it is written to the
+    /// shared `settings.json`. `auto` takes the shared preference out, so Windows decides again
+    /// (D-052). A write that fails is said in a toast; the launcher keeps the choice meanwhile.
+    pub(crate) fn choose_language(&mut self, code: String) {
+        self.settings.language = code;
+        set_current(effective_lang(&self.settings.language));
+        self.share_language();
+    }
+
+    /// Writes `settings.language` to the shared `settings.json`, for [`Self::choose_language`].
+    fn share_language(&mut self) {
+        let Some(dir) = self.shared_settings_dir.clone() else { return };
+        let language = crate::open3d_settings::Language::from_code(&self.settings.language);
+        match crate::open3d_settings::write_language(&dir, language) {
+            Ok(()) => self.settings.language_shared = true,
+            Err(e) => {
+                log::warn!("couldn't save the language for the other Open3D apps: {e}");
+                self.toast_from_ui(format!("Couldn't save the language for the other Open3D apps: {e}"), true);
+            }
+        }
     }
 
     pub(crate) fn entry(&self, id: &str) -> Option<&AppEntry> {
@@ -1131,6 +1159,69 @@ mod tests {
     /// Counts the `Install` commands in `sent`, ignoring every other command.
     fn installs(sent: &RefCell<Vec<Command>>) -> usize {
         sent.borrow().iter().filter(|command| matches!(command, Command::Install { .. })).count()
+    }
+
+    /// A folder of its own for the shared `settings.json`, never the real `%APPDATA%\Open3D`.
+    fn shared_folder(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("open3d-launcher-ui-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        dir
+    }
+
+    #[test]
+    /// A language chosen in Settings is written for every app, keeping the file's other keys; Auto
+    /// takes the preference out, so Windows decides again.
+    fn a_language_chosen_in_settings_is_shared_and_auto_takes_it_out() {
+        use crate::open3d_settings::{FILE_NAME, Language, read_language};
+        let (mut launcher, _sent, _ctx) = launcher();
+        let dir = shared_folder("choose");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(FILE_NAME), r#"{"theme":"dark"}"#).unwrap();
+        launcher.shared_settings_dir = Some(dir.clone());
+        // `share_language` alone: `choose_language` also sets the language this test binary draws in.
+        launcher.settings.language = "es".into();
+        launcher.share_language();
+        assert_eq!(read_language(&dir), Some(Language::Spanish));
+        assert!(launcher.settings.language_shared);
+        launcher.settings.language = Settings::LANGUAGE_AUTO.into();
+        launcher.share_language();
+        assert_eq!(read_language(&dir), None);
+        let file: serde_json::Value = serde_json::from_slice(&std::fs::read(dir.join(FILE_NAME)).unwrap()).unwrap();
+        assert_eq!(file, serde_json::json!({"theme": "dark"}));
+        launcher.choose_language("en".into());
+        assert_eq!(read_language(&dir), Some(Language::English));
+        assert_eq!(crate::i18n::current(), crate::i18n::Lang::EN, "shown at once");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    /// A language that cannot be written stays chosen here and says why in a toast.
+    fn a_language_that_cannot_be_shared_says_so() {
+        let (mut launcher, _sent, _ctx) = launcher();
+        let dir = shared_folder("choose-blocked");
+        // The folder is a file: nothing can be written in it.
+        std::fs::write(&dir, b"in the way").unwrap();
+        launcher.shared_settings_dir = Some(dir.clone());
+        launcher.frame = Some(1);
+        launcher.choose_language("en".into());
+        launcher.flush_actions();
+        assert_eq!(launcher.settings.language, "en");
+        assert!(!launcher.settings.language_shared);
+        assert!(
+            launcher.pending_toasts.iter().any(|(text, error)| *error && text.starts_with("Couldn't save the language for the other Open3D apps: ")),
+            "{:?}",
+            launcher.pending_toasts
+        );
+        let _ = std::fs::remove_file(&dir);
+    }
+
+    #[test]
+    /// Without a shared folder (the web build), a choice stays in this launcher.
+    fn without_a_shared_folder_a_choice_writes_nothing() {
+        let (mut launcher, _sent, _ctx) = launcher();
+        launcher.choose_language("en".into());
+        assert_eq!(launcher.settings.language, "en");
+        assert!(launcher.pending.is_empty() && launcher.pending_toasts.is_empty());
     }
 
     #[test]
