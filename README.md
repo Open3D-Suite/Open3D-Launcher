@@ -101,9 +101,11 @@ workload.
 
 ```
 cargo build --release -p open3d-launcher     # target\release\open3d-launcher.exe
-cargo test --workspace
-cargo xtask ci                                # fmt --check, clippy -D warnings, tests
+tools\check.ps1                               # every check; -Full adds one that needs the network
+cargo xtask ci                                # only fmt --check, clippy -D warnings, tests
 ```
+
+`tools\check.ps1` also needs Python 3.11 or newer and the ruff that `ruff.toml` names.
 
 The MSI and the portable zip are made by `packaging\windows\package.ps1`, which needs
 [WiX Toolset 5](https://wixtoolset.org) with its UI and Util extensions (see the script's header).
@@ -130,8 +132,8 @@ Each takes `--dry-run` to build without committing, tagging or uploading anythin
 compiled plug-in (OpenScatter), `app <id> --prebuilt` then uploads the very zip that dry run built, once it
 has been tested: two builds of a compiled plug-in are never the same bytes.
 
-`python -m unittest`, from the repository's root, runs the script's tests (`tools\test_publish.py`): they
-check what it would send out, and run no command.
+`tools\check.ps1` runs the script's tests (`tools\test_publish.py`), and so does
+`python -I -m unittest discover -s tools`: they check what it would send out, and run no command.
 
 ## Repository layout
 
@@ -145,7 +147,7 @@ check what it would send out, and run no command.
 | `packaging/windows/` | the MSI (WiX), the portable zip and their checks |
 | `assets/` | the Open3D icon (made by `dev/make_icon.py`), the app icons and the fonts |
 | `launcher-catalog.toml`, `.sig`, `launcher-app-icons/` | the signed catalog the launcher reads from `main` |
-| `tools/` | publishing apps, the catalog and the launcher (maintainers) |
+| `tools/` | the checks (`check.ps1`); publishing apps, the catalog and the launcher (maintainers) |
 | `xtask/` | `cargo xtask ci`, `version` and `ico` |
 
 ## Credits

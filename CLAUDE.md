@@ -18,21 +18,28 @@ as a change that makes it old.
 ## Build and check
 
 - Build: `cargo build --release -p open3d-launcher`. An ignored `.cargo/config.local.toml` is read if present.
-- Checks, all of which must pass (`cargo xtask ci` runs the first three):
-  - `cargo fmt --all --check`
+- Checks: `tools\check.ps1` runs them all, and all must pass. It needs Python 3.11 or newer and the ruff
+  that `ruff.toml` names. First what `tools/repo.py` has built in: the version agrees in its three places,
+  every source has its licence line, the common lints, no path of somebody's computer (`tools/repo.toml`
+  allows the made-up users of the tests). Then the commands that `tools/repo.toml` lists:
+  - `cargo fmt --all --check`, then `ruff format --check .` and `ruff check .` (`tools/`, `dev/make_icon.py`)
+  - `python -I -m unittest discover -s tools`: `tools/test_publish.py`, which runs no command (no network,
+    no git, no gh)
   - `cargo clippy --workspace --all-targets --locked -- -D warnings`
   - `cargo test --workspace --locked` (4 tests are ignored: 2 need the network, 2 are started by another)
-  - `ruff format --check .` and `ruff check .`, for the Python files in `tools/` and `dev/make_icon.py`
-  - `python -m unittest` from the root: `tools/test_publish.py`, which runs no command (no network, no
-    git, no gh) and is found because `tools/` has an `__init__.py`
-- `.editorconfig`, `.gitattributes`, `rustfmt.toml`, `clippy.toml` and `ruff.toml` are the same in every
-  Open3D repo. Do not change them here. This repo's own part: `disallowed-types` in `clippy.toml`, and in
-  `.gitattributes` the lines below `# Specific to this repository.`: Git never converts the signed files.
+  - only with `tools\check.ps1 -Full`: the ignored test of the live signed catalog. The other network test
+    reads `carlesllavata/wordtool`, which does not exist, and is left out.
+- `cargo xtask ci` runs fmt, clippy and the tests, with `--locked`.
+- `.editorconfig`, `.gitattributes`, `rustfmt.toml`, `clippy.toml`, `ruff.toml`, `LICENSE`, `tools/check.ps1`
+  and `tools/repo.py` are the same in every Open3D repo. Do not change them here. This repo's own part:
+  `disallowed-types` in `clippy.toml`, and in `.gitattributes` the lines below
+  `# Specific to this repository.`: Git never converts the signed files.
 
 ## Version and release
 
-- The version is in `[workspace.package]` of the root `Cargo.toml`; `cargo xtask version set X.Y.Z` writes
-  it. By hand: the README's `Status: early (vX.Y.Z)` line and a `## X.Y.Z` section in `CHANGELOG.md`.
+- The version is in `[workspace.package]` of the root `Cargo.toml`. `python -I tools/repo.py version set
+  X.Y.Z` writes it there, in `Cargo.lock` and in the README's `Status: early (vX.Y.Z)` line;
+  `cargo xtask version set` writes only the first two. By hand: a `## X.Y.Z` section in `CHANGELOG.md`.
 - `python -I tools\publish.py launcher --dry-run` needs that section and WiX 5: `package.ps1` builds the
   per-user MSI, whose UpgradeCode must be the one in `install-policy.json`, and the portable zip.
 - `publish.py app <id>` builds a 3ds Max app's zip from its latest `vX.Y.Z` tag (`tools/apps.json`);

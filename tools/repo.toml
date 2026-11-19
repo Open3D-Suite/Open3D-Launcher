@@ -1,0 +1,57 @@
+# What the common OPEN3D tools need to know about this repository. tools/repo.py reads it:
+# tools/check.ps1 runs the checks, and "python -I tools/repo.py version set X.Y.Z" writes a new version.
+
+# Where the version lives (`source`) and the other places that repeat it. Each one is a file and a
+# pattern whose one group is the version; "^" is the start of a line. In Cargo.lock the crates of
+# this workspace are the ones with no `source` line.
+[version]
+source = { file = "Cargo.toml", pattern = '^\[workspace\.package\]\n[^\[]*?^version = "([^"]+)"' }
+places = [
+    { file = "Cargo.lock", pattern = '^name = "[^"]+"\nversion = "([^"]+)"\n(?!source = )' },
+    { file = "README.md", pattern = '^> Status: early \(v([^)]+)\)' },
+]
+# Run after a new version is written: cargo looks Cargo.lock over, without touching the libraries.
+after_set = [["cargo", "update", "--workspace", "--offline"]]
+
+# The checks, in the order they run, the quick ones first. `full = true` marks one that only
+# tools/check.ps1 -Full runs.
+[[check]]
+name = "cargo fmt"
+run = ["cargo", "fmt", "--all", "--check"]
+
+[[check]]
+name = "ruff format"
+run = ["ruff", "format", "--check", "."]
+
+[[check]]
+name = "ruff check"
+run = ["ruff", "check", "."]
+
+# The tests of tools/publish.py: they run no command, so they need no network, no git and no gh.
+[[check]]
+name = "publish.py tests"
+run = ["python", "-m", "unittest", "discover", "-s", "tools"]
+
+[[check]]
+name = "cargo clippy"
+run = ["cargo", "clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings"]
+
+[[check]]
+name = "cargo test"
+run = ["cargo", "test", "--workspace", "--locked"]
+
+# The signed catalog that installed launchers read from this repository's main branch on GitHub:
+# it needs the network. http::tests::downloads_a_real_release_asset is not here: the repository
+# it reads, carlesllavata/wordtool, does not exist.
+[[check]]
+name = "cargo test live catalog"
+run = ["cargo", "test", "-p", "open3d-launcher-native", "--lib", "--locked", "--", "--ignored", "--exact", "hosted_catalog::tests::live_catalog_is_verified_cached_and_activated"]
+full = true
+
+# Folders of made-up users in tests and examples. None is the folder of a real person.
+[private_data]
+allow = [
+    { pattern = '(?i)C:\\Users\\(?:Ann|Anna|Ada)\b', reason = "made-up users in the tests of msi_migrate.rs and self_update.rs; Anna starts like Ann on purpose" },
+    { pattern = 'C:[\\/]Users[\\/](?:A B|O\x27Brien)[\\/]', reason = "made-up users of the tests whose space or apostrophe is what the test is about" },
+    { pattern = 'C:\\Users\\(?:me)\b', reason = "the reader's own folder, in an example of args.rs and in the tests" },
+]
