@@ -1,23 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Build Open3D app packages, the signed launcher catalog and the launcher itself, ready for the owner to publish.
+"""Build the signed Open3D launcher catalog and the launcher itself, ready for the owner to publish.
+
+Each app is packaged and released from its own repository, with `python -I tools/repo.py package` and
+`python -I tools/repo.py release X.Y.Z` there: this script keeps only what is the launcher's own.
 
 It never pushes and never publishes a release. What it commits and tags stays in this computer until the owner
 pushes it; every GitHub release it makes is a draft, which the owner publishes; a release that is already
 published is never changed. Where `origin` lacks a commit or a tag that the next step needs, it stops and prints
 the `git push` to run. Run again once `origin` has it (`git ls-remote` tells), it goes on from there.
 
-    python -I tools\\publish.py app opentools [--version 0.5.1] [--dry-run | --prebuilt]
-        Builds `<id>-<ver>-windows-x64-3dsmax.zip` from the app's `vX.Y.Z` tag (`git archive`, never the
-        working tree): runs the app's build steps (tools/apps.json), checks the bundle's AppVersion, adds the
-        app's LICENSE as `<bundle>/LICENSE`, and attaches the zip and `SHA256SUMS.txt` to a draft of the app's
-        own GitHub release `vX.Y.Z` (created, as a draft, from that version's CHANGELOG section when it doesn't
-        exist yet; a draft that exists gets its files replaced). The app's `origin` must have that same tag:
-        if it has none, it stops and prints `git push origin vX.Y.Z`. The launcher reads each app's versions
-        from those releases, once they are published.
-        `--prebuilt` attaches the zip an earlier `--dry-run` left in `dist/` instead of building again:
-        for an app with a compiled plug-in (OpenScatter), where two builds are never the same bytes, it
-        makes what was tested and what is released the same file. OpenScatter's build step compiles the
-        plug-in: it needs the Visual Studio Build Tools and the 3ds Max SDK (`ADSK_3DSMAX_SDK_2027`).
     python -I tools\\publish.py catalog [--dry-run]
         Signs `crates/core/catalog.toml` as `launcher-catalog.toml` + `.sig` (Ed25519, the key in
         `%USERPROFILE%\\.open3d\\launcher-catalog-signing-key.pem`, never in git), copies the app icons into
@@ -30,27 +21,21 @@ the `git push` to run. Run again once `origin` has it (`git ls-remote` tells), i
         prints `git push origin main` and `git push origin vX.Y.Z`. Once it has both, it makes the draft of
         the GitHub release with that version's CHANGELOG section and the three files. Installed launchers
         update themselves from it once it is published.
-
-Run it with 3ds Max's Python (an app's own build step may need PySide6).
 """
 
 import argparse
 import collections
 import hashlib
-import io
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-import tarfile
 import tempfile
-import zipfile
 from pathlib import Path
 
 LAUNCHER = Path(__file__).resolve().parent.parent
-APPS_FILE = LAUNCHER / "tools" / "apps.json"
 DIST = LAUNCHER / "dist"
 CATALOG_SOURCE = LAUNCHER / "crates" / "core" / "catalog.toml"
 CATALOG = LAUNCHER / "launcher-catalog.toml"
@@ -58,7 +43,6 @@ ICONS = LAUNCHER / "launcher-app-icons"
 APP_ICONS = LAUNCHER / "assets" / "app-icons"
 PUBLIC_KEY = LAUNCHER / "crates" / "core" / "assets" / "launcher-catalog-public-key.pem"
 SIGNING_KEY = Path(os.path.expandvars(r"%USERPROFILE%\.open3d\launcher-catalog-signing-key.pem"))
-VERSION_TAG = re.compile(r"^v(\d+(?:\.\d+)*)$")
 REMOTE = "origin"
 BRANCH = "main"
 LAUNCHER_REPO = "carlesllavata/Open3D"
@@ -89,18 +73,17 @@ def refuse_unsafe(cmd):
         raise PublishError("Refused, this script never runs it: %s" % " ".join(words))
 
 
-def call(cmd, cwd=None, binary=False, env=None, capture=True):
+def call(cmd, cwd=None, env=None, capture=True):
     """Runs a command and returns its result, whatever its exit code. Every command of this script goes through here."""
     refuse_unsafe(cmd)
     # The commands are built by this script from fixed program names, never from outside input.
-    return subprocess.run(cmd, cwd=cwd, env=env, capture_output=capture, text=not binary)  # noqa: S603
+    return subprocess.run(cmd, cwd=cwd, env=env, capture_output=capture, text=True)  # noqa: S603
 
 
-def run(cmd, cwd=None, binary=False):
-    result = call(cmd, cwd=cwd, binary=binary)
+def run(cmd, cwd=None):
+    result = call(cmd, cwd=cwd)
     if result.returncode != 0:
-        err = result.stderr if not binary else result.stderr.decode("utf-8", "replace")
-        raise PublishError("Command failed: %s\n%s" % (" ".join(map(str, cmd)), (err or "").strip()))
+        raise PublishError("Command failed: %s\n%s" % (" ".join(map(str, cmd)), (result.stderr or "").strip()))
     return result.stdout
 
 
@@ -122,37 +105,6 @@ def openssl():
     return find_tool(r"%ProgramFiles%\Git\usr\bin\openssl.exe", "openssl")
 
 
-def version_key(v):
-    return tuple(int(p) for p in v.split("."))
-
-
-def pick_tag(checkout, version):
-    tags = run(["git", "-C", str(checkout), "tag", "--list"]).split()
-    versions = {m.group(1): t for t in tags if (m := VERSION_TAG.match(t))}
-    if not versions:
-        raise PublishError("%s has no vX.Y.Z tags" % checkout)
-    if version:
-        if version not in versions:
-            raise PublishError("No tag v%s in %s" % (version, checkout))
-        return version, versions[version]
-    latest = max(versions, key=version_key)
-    return latest, versions[latest]
-
-
-def export_tag(checkout, tag, dest):
-    data = run(["git", "-C", str(checkout), "archive", "--format=tar", tag], binary=True)
-    with tarfile.open(fileobj=io.BytesIO(data)) as tar:
-        tar.extractall(dest, filter="data")
-
-
-def bundle_version(bundle_dir):
-    xml = (bundle_dir / "PackageContents.xml").read_text(encoding="utf-8")
-    m = re.search(r'\sAppVersion\s*=\s*"([^"]+)"', xml)
-    if not m:
-        raise PublishError("No AppVersion in %s" % bundle_dir)
-    return m.group(1)
-
-
 def changelog_section(path, version):
     """The body of the '## <version> ...' section, without its heading."""
     out, inside = [], False
@@ -171,42 +123,12 @@ def changelog_section(path, version):
     return text
 
 
-def zip_bundle(bundle_dir, bundle_name, zip_path, license_file):
-    """The bundle folder at the zip's root, with the app's LICENSE inside it (the GPL text travels with it)."""
-    files = sorted(
-        p for p in bundle_dir.rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
-    )
-    if zip_path.exists():
-        zip_path.unlink()
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
-        for f in files:
-            z.write(f, bundle_name + "/" + f.relative_to(bundle_dir).as_posix())
-        if not (bundle_dir / "LICENSE").exists():
-            z.write(license_file, bundle_name + "/LICENSE")
-    return len(files)
-
-
 def sha256(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 16), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def prebuilt_digest(zip_path, sums, bundle_name, version):
-    """The digest of the zip an earlier --dry-run left in dist/, once it is known to be that very zip."""
-    if not zip_path.is_file() or not sums.is_file():
-        raise PublishError("No %s in %s: build it first with --dry-run" % (zip_path.name, DIST.name))
-    digest = sha256(zip_path)
-    if sums.read_text(encoding="utf-8").split()[:1] != [digest]:
-        raise PublishError("%s is not the zip %s was written for" % (zip_path.name, sums.name))
-    with zipfile.ZipFile(zip_path) as z:
-        xml = z.read(bundle_name + "/PackageContents.xml").decode("utf-8")
-    m = re.search(r'\sAppVersion\s*=\s*"([^"]+)"', xml)
-    if not m or version_key(m.group(1)) != version_key(version):
-        raise PublishError("%s is not version %s" % (zip_path.name, version))
-    return digest
 
 
 def parse_tag(line):
@@ -337,76 +259,6 @@ def draft_release(repo, tag, title, notes, files):
 def say_draft(what, repo, tag, url):
     print("  %s attached to the draft release %s of %s" % (what, tag, repo))
     print("It is a DRAFT: nobody sees it until the owner publishes it on GitHub.\n  %s" % url)
-
-
-def build_app(app_id, version=None, prebuilt=False):
-    """The app's zip and its checksum in dist/, built from its tag. Returns what its release needs."""
-    apps = json.loads(APPS_FILE.read_text(encoding="utf-8"))
-    if app_id not in apps:
-        raise PublishError("Unknown app %r (known: %s)" % (app_id, ", ".join(apps)))
-    app = apps[app_id]
-    checkout = (LAUNCHER / app["checkout"]).resolve()
-    version, tag = pick_tag(checkout, version)
-    asset = "%s-%s-windows-x64-3dsmax.zip" % (app_id, version)
-    print("%s %s (tag %s)" % (app["name"], version, tag))
-    DIST.mkdir(exist_ok=True)
-    zip_path = DIST / asset
-    sums = DIST / ("SHA256SUMS-%s-%s.txt" % (app_id, version))
-    work = Path(tempfile.mkdtemp(prefix="open3d-publish-"))
-    try:
-        export_tag(checkout, tag, work)
-        if not (work / "LICENSE").is_file():
-            raise PublishError("No LICENSE at tag %s: every Open3D app ships its license" % tag)
-        notes = changelog_section(work / app["changelog"], version)
-        if prebuilt:
-            digest = prebuilt_digest(zip_path, sums, app["bundle"], version)
-            print("  %s: as built before, %.0f KB, sha256 %s" % (asset, zip_path.stat().st_size / 1024, digest))
-        else:
-            for script in app.get("build", []):
-                print("  build: %s" % script)
-                run([sys.executable, "-I", str(work / script)], cwd=work)
-            bundle_dir = work / app["bundle_path"]
-            if not (bundle_dir / "PackageContents.xml").is_file():
-                raise PublishError("No %s at tag %s" % (app["bundle_path"], tag))
-            found = bundle_version(bundle_dir)
-            if version_key(found) != version_key(version):
-                raise PublishError("Tag %s but the bundle says AppVersion %s" % (tag, found))
-            count = zip_bundle(bundle_dir, app["bundle"], zip_path, work / "LICENSE")
-            digest = sha256(zip_path)
-            sums.write_text("%s  %s\n" % (digest, asset), encoding="utf-8", newline="\n")
-            print("  %s: %d files, %.0f KB, sha256 %s" % (asset, count, zip_path.stat().st_size / 1024, digest))
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
-    return app, checkout, version, tag, zip_path, sums, notes
-
-
-def release_app(app, checkout, version, tag, zip_path, sums, notes, dry_run=False):
-    """The zip and its checksum into the draft release of the app's tag, once the app's remote has that tag."""
-    if dry_run:
-        print("Dry run: nothing uploaded.")
-        return
-    git = ["git", "-C", str(checkout)]
-    there = remote_refs(git, "refs/tags/" + tag).get("refs/tags/" + tag)
-    check_remote_tag(tag, local_tag(git, tag), there)
-    pushes = pushes_needed(True, tag, bool(there))
-    if pushes:
-        ready = "%s is built in %s, and %s has no tag %s." % (zip_path.name, DIST.name, REMOTE, tag)
-        then = "and then this same command again, with --prebuilt to release this very zip."
-        print(waiting(ready, checkout, pushes, then))
-        return
-    repo = app["repo"]
-    upload_dir = Path(tempfile.mkdtemp(prefix="open3d-upload-"))
-    try:
-        named_sums = upload_dir / "SHA256SUMS.txt"
-        shutil.copyfile(sums, named_sums)
-        url = draft_release(repo, tag, "%s %s" % (app["name"], version), notes, [zip_path, named_sums])
-    finally:
-        shutil.rmtree(upload_dir, ignore_errors=True)
-    say_draft("%s and SHA256SUMS.txt" % zip_path.name, repo, tag, url)
-
-
-def publish_app(app_id, version=None, dry_run=False, prebuilt=False):
-    release_app(*build_app(app_id, version, prebuilt), dry_run=dry_run)
 
 
 def sign(path):
@@ -561,21 +413,13 @@ def publish_launcher(dry_run=False):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="cmd", required=True)
-    a = sub.add_parser("app", help="attach an app's package to a draft of its own release")
-    a.add_argument("app")
-    a.add_argument("--version")
-    how = a.add_mutually_exclusive_group()
-    how.add_argument("--dry-run", action="store_true", help="build the zip into dist/ and upload nothing")
-    how.add_argument("--prebuilt", action="store_true", help="release the zip an earlier --dry-run built")
     c = sub.add_parser("catalog", help="sign the launcher catalog and commit it")
     c.add_argument("--dry-run", action="store_true", help="sign and check, and commit nothing")
     la = sub.add_parser("launcher", help="build the launcher, tag it and draft its release")
     la.add_argument("--dry-run", action="store_true", help="build the packages, and tag and upload nothing")
     args = p.parse_args(argv)
     try:
-        if args.cmd == "app":
-            publish_app(args.app, args.version, args.dry_run, args.prebuilt)
-        elif args.cmd == "launcher":
+        if args.cmd == "launcher":
             publish_launcher(args.dry_run)
         else:
             publish_catalog(args.dry_run)

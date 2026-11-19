@@ -14,7 +14,6 @@ import io
 import itertools
 import json
 import subprocess
-import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -192,11 +191,11 @@ class Guard(Checks):
         git = ["git", "-C", "Z:/repo"]
         publish.refuse_unsafe(git + ["ls-remote", "origin", "refs/heads/main", "refs/tags/v1.2.3"])
         publish.refuse_unsafe(git + ["tag", "-a", "v1.2.3", "-m", "Open3D Launcher 1.2.3"])
-        publish.refuse_unsafe(git + ["tag", "--list"])
+        publish.refuse_unsafe(git + ["for-each-ref", "--format=%(objectname) %(objecttype)", "refs/tags/v1.2.3"])
         publish.refuse_unsafe(git + ["commit", "-m", "Catalog: sign launcher-catalog.toml"])
         publish.refuse_unsafe(["gh", "api", "repos/o/r/releases/tags/v1.2.3", "--jq", ".html_url"])
         publish.refuse_unsafe(["gh", "release", "view", "v1.2.3", "--repo", "o/r", "--json", "isDraft,url"])
-        publish.refuse_unsafe(publish.create_command("gh", "o/r", "v1.2.3", "App 1.2.3", "notes.md"))
+        publish.refuse_unsafe(publish.create_command("gh", "o/r", "v1.2.3", "Open3D Launcher 1.2.3", "notes.md"))
         publish.refuse_unsafe(publish.upload_command("gh", "o/r", "v1.2.3", ["a.zip"]))
         publish.refuse_unsafe(["powershell", "-File", "package.ps1"])
 
@@ -281,7 +280,7 @@ class Decisions(Checks):
                 publish.release_step("o/r", "v1.2.3", state)
 
     def test_the_command_that_creates_a_release_always_makes_a_draft(self):
-        cmd = publish.create_command("gh", "o/r", "v1.2.3", "App 1.2.3", Path("notes.md"))
+        cmd = publish.create_command("gh", "o/r", "v1.2.3", "Open3D Launcher 1.2.3", Path("notes.md"))
         self.assertEqual(cmd[:6], ["gh", "release", "create", "v1.2.3", "--repo", "o/r"])
         self.assertIn("--draft", cmd)
         self.assertIn("--verify-tag", cmd)
@@ -463,95 +462,6 @@ class Launcher(Checks):
         self.assertLessEqual({"git tag", "gh api", "gh release view", "gh release create", "gh release upload"}, seen)
 
 
-class App(Checks):
-    def setUp(self):
-        folder = tempfile.TemporaryDirectory()
-        self.addCleanup(folder.cleanup)
-        self.zip = Path(folder.name) / "opentools-1.2.3-windows-x64-3dsmax.zip"
-        self.sums = Path(folder.name) / "SHA256SUMS-opentools-1.2.3.txt"
-        self.zip.write_bytes(b"zip")
-        self.sums.write_text("0  %s\n" % self.zip.name, encoding="utf-8")
-
-    def release(self, commands, dry_run=False):
-        app = {"name": "OpenTools", "repo": "o/OpenTools"}
-        args = (app, Path("checkout"), "1.2.3", "v1.2.3", self.zip, self.sums, "notes")
-        return go(commands, publish.release_app, *args, dry_run=dry_run)
-
-    def test_a_dry_run_runs_no_command(self):
-        commands = world(local=ANNOTATED, tag=TAG, release="draft")
-        out, error = self.release(commands, dry_run=True)
-        self.assertIsNone(error)
-        self.assertEqual(commands.ran, [])
-        self.assertIn("Dry run", out)
-
-    def test_a_missing_remote_tag_stops_before_any_release_call(self):
-        for local in (ANNOTATED, LIGHTWEIGHT):
-            commands = world(local=local, tag=None, release="draft")
-            out, error = self.release(commands)
-            self.assertIsNone(error)
-            self.assertEqual(commands.names(), ["git ls-remote", "git for-each-ref"])
-            self.assertIn("    git push origin v1.2.3\n", out)
-            self.assertNotIn("git push origin main", out)
-            self.assert_nothing_left(commands, out)
-
-    def test_a_remote_tag_that_is_another_one_stops_before_any_release_call(self):
-        commands = world(local=ANNOTATED, tag=OTHER, release="draft")
-        out, error = self.release(commands)
-        self.assertIsNotNone(error)
-        self.assertEqual(commands.to_github(), [])
-
-    def test_with_the_tag_on_the_remote_it_creates_a_draft_and_says_so(self):
-        for local, tag in ((ANNOTATED, TAG), (LIGHTWEIGHT, HEAD)):
-            commands = world(local=local, tag=tag, release=None)
-            out, error = self.release(commands)
-            self.assertIsNone(error)
-            create, upload = commands.ran[-2:]
-            self.assertEqual(
-                create[:8], ["gh", "release", "create", "v1.2.3", "--repo", "o/OpenTools", "--draft", "--verify-tag"]
-            )
-            self.assertEqual(create[8:10], ["--title", "OpenTools 1.2.3"])
-            self.assertEqual(upload[:5], ["gh", "release", "upload", "v1.2.3", str(self.zip)])
-            self.assertEqual(Path(upload[5]).name, "SHA256SUMS.txt")
-            self.assertIn("DRAFT", out)
-            self.assertIn(NEW_DRAFT, out)
-            self.assert_nothing_left(commands, out)
-
-    def test_a_draft_gets_its_files_replaced(self):
-        commands = world(local=ANNOTATED, tag=TAG, release="draft")
-        out, error = self.release(commands)
-        self.assertIsNone(error)
-        self.assertEqual(commands.named("gh release create"), [])
-        self.assertEqual(commands.named("gh release upload")[0][-3:], ["--repo", "o/OpenTools", "--clobber"])
-        self.assertIn(DRAFT["url"], out)
-
-    def test_a_published_release_is_never_uploaded_to(self):
-        for release in ("published", "both"):
-            commands = world(local=ANNOTATED, tag=TAG, release=release)
-            out, error = self.release(commands)
-            self.assertRegex(str(error), "published")
-            self.assert_nothing_uploaded(commands)
-
-    def test_whatever_it_finds_it_never_pushes_publishes_or_changes_a_published_release(self):
-        found = itertools.product((ANNOTATED, LIGHTWEIGHT), (None, TAG, HEAD, OTHER), RELEASES, (False, True))
-        seen = set()
-        for local, tag, release, dry_run in found:
-            with self.subTest(local=local, tag=tag, release=release, dry_run=dry_run):
-                commands = world(local=local, tag=tag, release=release)
-                out, error = self.release(commands, dry_run)
-                seen.update(commands.names())
-                self.assert_nothing_left(commands, out)
-                self.assertEqual(commands.named("git tag"), [])
-                if dry_run:
-                    self.assertEqual(commands.ran, [])
-                if commands.to_github():
-                    self.assertEqual(tag, publish.parse_tag(local).object)
-                if commands.named("gh release create"):
-                    self.assertIsNone(release)
-                if commands.named("gh release upload"):
-                    self.assertIn(release, (None, "draft"))
-        self.assertLessEqual({"gh api", "gh release view", "gh release create", "gh release upload"}, seen)
-
-
 class Catalog(Checks):
     def test_a_dry_run_runs_no_command(self):
         commands = world()
@@ -595,11 +505,6 @@ class CommandLine(Checks):
         self.assertEqual(builder.call_count, 1)
         self.assertEqual(commands.ran, [])
 
-    def test_app_dry_run(self):
-        app = {"name": "OpenTools", "repo": "o/OpenTools"}
-        built = (app, Path("checkout"), "1.2.3", "v1.2.3", Path("a.zip"), Path("sums.txt"), "notes")
-        self.dry_run(["app", "opentools", "--dry-run"], "build_app", built)
-
     def test_launcher_dry_run(self):
         built = ("1.2.3", Path("out"), [Path("a.msi"), Path("a.zip")], Path("SHA256SUMS.txt"), "notes")
         self.dry_run(["launcher", "--dry-run"], "build_launcher", built)
@@ -608,7 +513,7 @@ class CommandLine(Checks):
         self.dry_run(["catalog", "--dry-run"], "sign_catalog")
 
     def test_no_command_offers_an_option_that_pushes(self):
-        for argv in (["--help"], ["app", "--help"], ["catalog", "--help"], ["launcher", "--help"]):
+        for argv in (["--help"], ["catalog", "--help"], ["launcher", "--help"]):
             out = io.StringIO()
             with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as stopped:
                 publish.main(argv)

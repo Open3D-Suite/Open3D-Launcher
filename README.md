@@ -112,15 +112,13 @@ The MSI and the portable zip are made by `packaging\windows\package.ps1`, which 
 
 ### Publishing (maintainers)
 
-`tools\publish.py`, run with the Python that ships with 3ds Max (`python -I tools\publish.py ...`), needs
-the GitHub CLI. It never pushes and never publishes a release: where GitHub lacks a commit or a tag it
-stops and prints the `git push` to run, and every release it makes is a draft, which the maintainer
-publishes on GitHub. It never changes a release that is already published.
+Each app is packaged and released from its own repository, with `python -I tools\repo.py package` and
+`python -I tools\repo.py release X.Y.Z` there. Here, `tools\publish.py` (`python -I tools\publish.py ...`)
+signs the catalog and releases the launcher, and needs the GitHub CLI. It never pushes and never publishes
+a release: where GitHub lacks a commit or a tag it stops and prints the `git push` to run, and every
+release it makes is a draft, which the maintainer publishes on GitHub. It never changes a release that is
+already published.
 
-- `app <id>`: builds `<id>-<version>-windows-x64-3dsmax.zip` from a 3ds Max app's latest `vX.Y.Z` tag and,
-  once that tag is pushed, attaches it, with `SHA256SUMS.txt`, to a draft of that app's GitHub release
-  (`tools\apps.json` lists those apps). A standalone app builds and publishes its own zip from its
-  repository.
 - `catalog`: signs `crates\core\catalog.toml` as `launcher-catalog.toml` + `.sig` with the maintainer's
   private key (never in this repository), copies the app icons into `launcher-app-icons\` and commits.
   Launchers read them once that commit is pushed to `main`. Only needed when the list of apps changes.
@@ -128,9 +126,7 @@ publishes on GitHub. It never changes a release that is already published.
   Run again once `main` and that tag are pushed, it builds again and makes a draft of this repository's
   release with the version's CHANGELOG section.
 
-Each takes `--dry-run` to build without committing, tagging or uploading anything. For an app with a
-compiled plug-in (OpenScatter), `app <id> --prebuilt` then uploads the very zip that dry run built, once it
-has been tested: two builds of a compiled plug-in are never the same bytes.
+Each takes `--dry-run` to sign or build without committing, tagging or uploading anything.
 
 `tools\check.ps1` runs the script's tests (`tools\test_publish.py`), and so does
 `python -I -m unittest discover -s tools`: they check what it would send out, and run no command.
@@ -147,7 +143,7 @@ has been tested: two builds of a compiled plug-in are never the same bytes.
 | `packaging/windows/` | the MSI (WiX), the portable zip and their checks |
 | `assets/` | the Open3D icon (made by `dev/make_icon.py`), the app icons and the fonts |
 | `launcher-catalog.toml`, `.sig`, `launcher-app-icons/` | the signed catalog the launcher reads from `main` |
-| `tools/` | the checks (`check.ps1`); publishing apps, the catalog and the launcher (maintainers) |
+| `tools/` | the checks (`check.ps1`); signing the catalog and releasing the launcher (maintainers) |
 | `xtask/` | `cargo xtask ci`, `version` and `ico` |
 
 ## Credits

@@ -44,18 +44,15 @@ as a change that makes it old.
   `cargo xtask version set` writes only the first two. By hand: a `## X.Y.Z` section in `CHANGELOG.md`.
 - `python -I tools\publish.py launcher --dry-run` needs that section and WiX 5: `package.ps1` builds the
   per-user MSI, whose UpgradeCode must be the one in `install-policy.json`, and the portable zip.
-- `publish.py app <id>` builds a 3ds Max app's zip from its latest `vX.Y.Z` tag (`tools/apps.json`);
-  `publish.py catalog` signs `crates/core/catalog.toml` as `launcher-catalog.toml` and `.sig`.
-- `tools/publish.py` never pushes and never publishes a release. With `--dry-run` it also commits, tags and
+- Each app is packaged and released from its own repo (`tools/repo.py package` / `release`), not from here.
+  `tools/publish.py` never pushes and never publishes a release. With `--dry-run` it also commits, tags and
   uploads nothing. Without it:
   - `launcher` builds, then tags HEAD with the annotated tag `vX.Y.Z`. While `git ls-remote origin` shows
     no such tag, or a `main` without that commit, it stops and prints `git push origin main` and
     `git push origin vX.Y.Z`. Run again with both there, it builds again and makes the release of
     `carlesllavata/Open3D` as a draft, with the MSI, the portable zip and `SHA256SUMS.txt`.
-  - `app <id>` stops and prints `git push origin vX.Y.Z` while the app's `origin` has no such tag. With the
-    tag there, it puts the zip and `SHA256SUMS.txt` in a draft release of the app's repo.
-  - `catalog` commits the signed files, and prints `git push origin main` while `origin`'s `main` lacks
-    that commit.
+  - `catalog` signs `crates/core/catalog.toml` as `launcher-catalog.toml` and `.sig`, commits them, and
+    prints `git push origin main` while `origin`'s `main` lacks that commit.
   - A release it makes is a draft, never marked as the latest. A draft that exists gets its files replaced.
     On a release that is already published it stops and uploads nothing.
   - It stops on a tag `vX.Y.Z` of this repo that is not annotated or not on HEAD, and on a tag that `origin`
@@ -87,7 +84,7 @@ as a change that makes it old.
 - `publish.py launcher` builds twice, before the push and after it: the release carries the second build.
 - Installed launchers read the signed catalog from this repo's `main` branch at every start.
 - Adding an app: its entry in `crates/core/catalog.toml`, `assets/app-icons/<id>.png` and its line in
-  `catalog::app_icon_png`, its `es.tsv` rows, `tools/apps.json` (3ds Max apps only), and the catalog signed
-  again. `publish.py catalog` does not update the copy in `crates/core/tests/fixtures/`, which a test checks.
+  `catalog::app_icon_png`, its `es.tsv` rows, and the catalog signed again. `publish.py catalog` does not
+  update the copy in `crates/core/tests/fixtures/`, which a test checks.
 - Only debug builds obey `OPEN3D_LAUNCHER_IGNORE_MAX` and `OPEN3D_LAUNCHER_APPS_ROOT`; only `local-mirror`
   builds obey `OPEN3D_LAUNCHER_DOWNLOAD_BASE`. Comments name a `cargo xtask local serve` that does not exist.
