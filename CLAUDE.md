@@ -18,7 +18,7 @@ as a change that makes it old.
 ## Build and check
 
 - Build: `cargo build --release -p open3d-launcher`. An ignored `.cargo/config.local.toml` is read if present.
-- Checks, all of which must pass (`cargo xtask ci` runs the first three, without `--locked`):
+- Checks, all of which must pass (`cargo xtask ci` runs the first three):
   - `cargo fmt --all --check`
   - `cargo clippy --workspace --all-targets --locked -- -D warnings`
   - `cargo test --workspace --locked` (4 tests are ignored: 2 need the network, 2 are started by another)

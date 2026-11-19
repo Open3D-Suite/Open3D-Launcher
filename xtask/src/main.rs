@@ -71,8 +71,8 @@ fn cmd_ci() -> Result<(), String> {
     type Step = (&'static str, Box<dyn Fn() -> Result<(), String>>);
     let steps: Vec<Step> = vec![
         ("fmt", Box::new(|| cargo_step(&["fmt", "--all", "--", "--check"]))),
-        ("clippy", Box::new(|| cargo_step(&["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]))),
-        ("test", Box::new(|| cargo_step(&["test", "--workspace"]))),
+        ("clippy", Box::new(|| cargo_step(&["clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings"]))),
+        ("test", Box::new(|| cargo_step(&["test", "--workspace", "--locked"]))),
     ];
     let mut done = Vec::new();
     for (name, f) in &steps {
