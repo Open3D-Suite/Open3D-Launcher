@@ -60,10 +60,10 @@ pub(crate) fn install_at(
     #[cfg(windows)]
     let _commit = commit;
     let _destination = destination(app, kind, existing, previous, job.install_locations)?;
-    // A standalone app is asked about its own file below: another copy of it, started from
+    // A program is asked about below, by its own copies: another copy of it, started from
     // somewhere else, has the same process name and is no reason to wait.
     if let Some(inst) = existing
-        && kind != PackageKind::AppZip
+        && !app.is_standalone()
         && inst.source.launcher_can_update()
         && process::is_running(Path::new(&inst.location))
     {
@@ -72,8 +72,9 @@ pub(crate) fn install_at(
     if kind == PackageKind::MaxBundle && crate::max_bundle::max_running() {
         return Err(crate::max_bundle::max_running_error());
     }
-    if kind == PackageKind::AppZip && crate::standalone::exe_path(app).is_some_and(|exe| crate::standalone::running(&exe)) {
-        return Err(crate::standalone::running_error(app));
+    // Never a program that is open (D-157).
+    if app.is_standalone() {
+        program_closed(app)?;
     }
     bind_artifact_version(app, release, asset)?;
     // A feed can't send an app back to an older build; only a version the person chose by name
@@ -114,6 +115,21 @@ pub(crate) fn install_at(
     }
     // The system's own prompt was dismissed: the download itself wasn't cancelled.
     result.map_err(|e| if e == CANCELLED { INSTALL_CANCELLED.to_string() } else { e })
+}
+
+/// The copies of a program the launcher looks after: the one in this account's programs folder
+/// (or a portable launcher's).
+pub(crate) fn program_exes(app: &SuiteApp) -> Vec<PathBuf> {
+    crate::standalone::exe_path(app).into_iter().collect()
+}
+
+/// `Ok` unless a copy of the program `app` is open (D-157).
+fn program_closed(app: &SuiteApp) -> Result<(), String> {
+    use crate::running::Processes;
+    if crate::running::is_open(&program_exes(app), &crate::running::SystemProcesses.list()) {
+        return Err(crate::running::open_error(app));
+    }
+    Ok(())
 }
 
 /// Rejects an artifact whose own identity disagrees with the release that authorized it.
@@ -416,10 +432,11 @@ pub(crate) fn uninstall(
 ) -> Result<Note, String> {
     let _ = (record, stop, &phase, paths);
     let path = PathBuf::from(&installed.location);
-    // A standalone app is found by its own program, whoever installed it, and says itself whether
-    // that program is running.
+    // A standalone app is found by its own program, whoever installed it, and is never removed
+    // while it is open (D-157).
     let remove_program = || crate::standalone::uninstall(app, &path).map(crate::standalone::still_running_note);
     if app.is_standalone() {
+        program_closed(app)?;
         return remove_program();
     }
     if matches!(installed.source, InstallSource::Launcher) && process::is_running(&path) {

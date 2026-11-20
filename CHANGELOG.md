@@ -24,6 +24,8 @@ What each version of the Open3D Launcher adds, newest first.
 - **A portable launcher installs the programs inside its own folder,** in `Open3DLauncherData\Programs`,
   and adds no shortcut to the Start menu or the desktop, so it writes nothing outside its folder. Programs
   it installed in your user folder before stay there and keep working; it no longer lists them.
+- **A program that is open is never updated or removed,** also when another account on the computer has
+  it open: the launcher looks at the programs that run and says "… is open; close it and try again".
 - **The setting "Ask for permission once when updating all apps" is gone.** It never did anything in
   Open3D: Update all updates each app on its own, and Windows asks for permission for each program that
   needs it.

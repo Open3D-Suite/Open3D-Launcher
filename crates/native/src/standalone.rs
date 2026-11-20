@@ -158,7 +158,7 @@ pub fn running(exe: &Path) -> bool {
 
 /// The error for anything that must wait until the app is closed.
 pub fn running_error(app: &SuiteApp) -> String {
-    format!("{} is running. Quit it, then try again.", app.name)
+    crate::running::open_error(app)
 }
 
 /// What a finished install, update or removal adds to its message when a file of the old copy is
@@ -551,8 +551,8 @@ mod tests {
         // Windows holds a running program's file the way this handle does: readable, not writable.
         let held = std::fs::OpenOptions::new().read(true).share_mode(1).open(&record.path).unwrap();
         assert!(running(&record.path));
-        assert_eq!(install_sample(tmp.path(), &places, "0.5.1", "new").unwrap_err(), "PhotoTool is running. Quit it, then try again.");
-        assert_eq!(remove(&app(), &record.path, &places).unwrap_err(), "PhotoTool is running. Quit it, then try again.");
+        assert_eq!(install_sample(tmp.path(), &places, "0.5.1", "new").unwrap_err(), "PhotoTool is open; close it and try again.");
+        assert_eq!(remove(&app(), &record.path, &places).unwrap_err(), "PhotoTool is open; close it and try again.");
         assert_eq!(installed_version(&places).as_deref(), Some("0.5.0"));
         assert_eq!(names(&places.apps), ["PhotoTool"]);
         drop(held);

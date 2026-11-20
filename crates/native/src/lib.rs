@@ -25,6 +25,7 @@ mod pins;
 mod portable;
 pub mod process;
 pub mod proxy;
+mod running;
 mod screenshots;
 pub mod self_update;
 pub mod single_instance;
