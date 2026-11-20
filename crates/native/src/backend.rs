@@ -505,16 +505,6 @@ impl NativeBackend {
         true
     }
 
-    /// Starts one install per app (see [`Command::InstallAll`]). Apps unknown or already running a
-    /// job are left out.
-    fn install_all(&self, apps: &[String]) {
-        for id in apps {
-            if SuiteApp::by_id(id).is_some() {
-                self.start_job(id, Work::Install);
-            }
-        }
-    }
-
     /// Downloads the newer launcher, puts it in place and asks the UI to quit so it can start.
     fn update_launcher(&self) {
         let id = LAUNCHER_ID.to_string();
@@ -749,7 +739,7 @@ fn with_note(text: String, note: install::Note) -> String {
 /// until every other job has ended, then sets `restarting`, which keeps new jobs from starting.
 /// The restart that follows would otherwise cut their installs short. The user can cancel the
 /// wait (`stop`); after `limit` it gives up and names the apps still busy, since one may be
-/// stuck behind a password prompt nobody has answered.
+/// stuck behind a Windows permission prompt nobody has answered.
 fn claim_restart(
     jobs: &Mutex<HashMap<String, Arc<Stop>>>,
     restarting: &AtomicBool,
@@ -790,7 +780,7 @@ fn restart_blocked(mut busy: Vec<&str>) -> String {
         _ => (busy.join(", "), "were", "them"),
     };
     format!(
-        "Open3D Launcher didn't restart to update: {names} {were} still installing. Answer or close any password prompt, \
+        "Open3D Launcher didn't restart to update: {names} {were} still installing. Answer any Windows permission prompt, \
          let {them} finish or cancel {them}, then press Update and restart again."
     )
 }
@@ -1337,7 +1327,6 @@ impl Backend for NativeBackend {
             Command::Install { app } => {
                 self.start_job(&app, Work::Install);
             }
-            Command::InstallAll { apps } => self.install_all(&apps),
             Command::Replace { app, path } => {
                 self.start_job(&app, Work::Replace(path));
             }

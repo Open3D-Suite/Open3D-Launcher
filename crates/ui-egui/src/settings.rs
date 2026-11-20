@@ -113,10 +113,6 @@ pub struct Settings {
     /// Automatically download and install updates when found.
     #[serde(default)]
     pub auto_update: bool,
-    /// Update all apps together behind one permission prompt where the platform asks for one
-    /// (Linux and Windows); off, each app's update asks on its own.
-    #[serde(default)]
-    pub batch_updates: bool,
     /// Show a system notification when an installed app has an update.
     pub notify: bool,
     pub prereleases: bool,
@@ -255,7 +251,6 @@ impl Default for Settings {
             show_on_current_desktop: true,
             check_every: CheckEvery::Hour,
             auto_update: false,
-            batch_updates: false,
             notify: true,
             prereleases: false,
             versions: BTreeMap::new(),
@@ -405,6 +400,14 @@ mod tests {
         settings.take_shared_language(Some(&shared.0));
         assert_eq!((settings.language.as_str(), settings.language_shared), ("en", true));
         assert_eq!(open3d_settings::read_language(&shared.0), Some(open3d_settings::Language::English));
+    }
+
+    /// "Ask for permission once when updating all apps" is gone (D-047: Windows asks for each
+    /// program); settings saved with it still load.
+    #[test]
+    fn settings_saved_with_the_one_prompt_choice_still_load() {
+        let s: Settings = serde_json::from_str(r#"{"auto_update":true,"batch_updates":true,"notify":false}"#).expect("settings of an older launcher");
+        assert!(s.auto_update && !s.notify);
     }
 
     #[test]

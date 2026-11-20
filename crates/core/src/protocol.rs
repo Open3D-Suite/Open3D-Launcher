@@ -30,12 +30,6 @@ pub enum Command {
     Install {
         app: String,
     },
-    /// Install or update every app in `apps` together: their downloads run as for [`Command::Install`],
-    /// but where the platform needs a permission prompt (polkit on Linux, elevation on Windows)
-    /// the batch shares one prompt instead of one per app. Apps already running a job are left out.
-    InstallAll {
-        apps: Vec<String>,
-    },
     /// `Install`, writing over what [`Event::Occupied`] reported. `path` is the path the user
     /// agreed to overwrite: if the install would now write somewhere else, nothing is replaced and
     /// the user is asked again.
@@ -155,8 +149,8 @@ pub struct PausedDownload {
 pub const PAUSED: &str = "paused";
 /// The `JobFinished` error a cancelled job ends with (not a failure).
 pub const CANCELLED: &str = "cancelled";
-/// The `JobFinished` error of an install whose system prompt (password, Windows Installer) the
-/// user dismissed after the download finished (not a failure).
+/// The `JobFinished` error of an install whose Windows permission prompt the user dismissed after
+/// the download finished (not a failure).
 pub const INSTALL_CANCELLED: &str = "install cancelled";
 
 /// Which service an app's release information came from (the footer names them).

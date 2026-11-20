@@ -21,6 +21,9 @@ What each version of the Open3D Launcher adds, newest first.
 - **A portable launcher keeps the files of the programs it opens in its own folder too:** their settings
   in `Open3DLauncherData` and the rest in `Open3DLauncherData\Local` (OpenRef for now, the others as they
   are updated).
+- **The setting "Ask for permission once when updating all apps" is gone.** It never did anything in
+  Open3D: Update all updates each app on its own, and Windows asks for permission for each program that
+  needs it.
 
 ## 0.3.4 — 16 November 2026
 

@@ -254,7 +254,7 @@ impl LauncherUi {
                     JobPhase::Waiting => (None, tl!("Waiting for other installs…").to_string()),
                     JobPhase::Installing | JobPhase::Removing => (None, tl!("Installing, then restarting…").to_string()),
                 };
-                // Another app's install can hang on a password prompt: the wait can be called off.
+                // Another app's install can hang on a Windows permission prompt: the wait can be called off.
                 if phase == JobPhase::Waiting
                     && widgets::glyph_button(ui, widgets::Glyph::Close, tl!("Cancel update"))
                         .on_hover_text(tl!("Stop waiting; the update can be started again later"))
@@ -379,20 +379,16 @@ impl LauncherUi {
             .accessible_name(tl!("Sort"));
     }
 
-    /// Update every eligible app; used in the compact and full-width toolbars. With batched
-    /// updates on, one command installs them together: behind one permission prompt where the
-    /// platform asks for one, instead of one prompt per app.
+    /// Update every eligible app; used in the compact and full-width toolbars. Each app is a job of
+    /// its own: the programs' Windows Installer packages run one after another, each asking
+    /// Windows for permission itself (D-047).
     fn update_all_button(&mut self, ui: &mut Ui, updates: usize) {
         let label = if updates == 1 { tl!("Update 1 app").to_string() } else { fmt(tl!("Update all ({count})"), &[("count", &updates.to_string())]) };
         if widgets::button(ui, &label, Kind::Primary, 0.0).clicked() {
             let ids: Vec<String> =
                 self.entries.iter().filter(|e| self.in_filter(e, Filter::Updates) && e.job.is_none()).map(|e| e.app.id.to_string()).collect();
-            if self.settings.batch_updates {
-                self.act_command(Command::InstallAll { apps: ids });
-            } else {
-                for id in ids {
-                    self.act_command(Command::Install { app: id });
-                }
+            for id in ids {
+                self.act_command(Command::Install { app: id });
             }
         }
     }
