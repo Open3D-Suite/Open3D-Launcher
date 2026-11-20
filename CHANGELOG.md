@@ -35,6 +35,8 @@ What each version of the Open3D Launcher adds, newest first.
   it installed in your user folder before stay there and keep working; it no longer lists them.
 - **A program that is open is never updated or removed,** also when another account on the computer has
   it open: the launcher looks at the programs that run and says "… is open; close it and try again".
+- **Close OpenFarm and update.** OpenFarm keeps running without its window, so when it is open the launcher
+  offers to close it, waits for it to end and then updates it. If it doesn't close, nothing is changed.
 - **The setting "Ask for permission once when updating all apps" is gone.** It never did anything in
   Open3D: Update all updates each app on its own, and Windows asks for permission for each program that
   needs it.

@@ -112,7 +112,12 @@ pub(crate) enum UiAction {
 pub(crate) enum Dialog {
     Notes(String),
     ConfirmUninstall(String),
-    Replace { app: String, path: String },
+    Replace {
+        app: String,
+        path: String,
+    },
+    /// An update stopped because the program is open, and the launcher can ask it to quit.
+    CloseApp(String),
     Settings,
     LauncherUpdate(open3d_launcher_core::Release),
     Versions(String),
@@ -126,6 +131,7 @@ impl Dialog {
             Dialog::Notes(id) => ("notes", id),
             Dialog::ConfirmUninstall(id) => ("uninstall", id),
             Dialog::Replace { app, .. } => ("replace", app),
+            Dialog::CloseApp(id) => ("close-app", id),
             Dialog::Settings => ("settings", ""),
             Dialog::LauncherUpdate(r) => ("launcher-update", &r.tag),
             Dialog::Versions(id) => ("versions", id),
@@ -624,6 +630,10 @@ impl LauncherUi {
                 self.dialog = Some(Dialog::Replace { app, path });
                 false
             }
+            Event::AppOpen { app } => {
+                self.dialog = Some(Dialog::CloseApp(app));
+                false
+            }
             Event::JobFinished { app, result } => {
                 self.on_job_finished(app, result);
                 true
@@ -690,8 +700,8 @@ impl LauncherUi {
                 self.toast(tl!("Install cancelled. The download is kept for the next try."), false);
             }
             Err(e) if e == INSTALL_CANCELLED => self.toast(tl!("Install cancelled"), false),
-            // The Replace dialog says it all.
-            Err(_) if matches!(&self.dialog, Some(Dialog::Replace { app: a, .. }) if *a == app) => {}
+            // The Replace dialog, or the one that offers to close the program, says it all.
+            Err(_) if matches!(&self.dialog, Some(Dialog::Replace { app: a, .. } | Dialog::CloseApp(a)) if *a == app) => {}
             Err(e) => self.toast(e, true),
         }
     }
@@ -1357,6 +1367,20 @@ mod tests {
         launcher.toast("PhotoTool updated", false);
         launcher.attach(&ctx);
         assert_eq!(launcher.pending_toasts.len(), 1, "a message from logic is not tied to the old window");
+    }
+
+    /// An update that stopped because OpenFarm is open offers to close it (D-157): the dialog says
+    /// it, so the message is not shown again as a toast.
+    #[test]
+    fn an_open_program_that_can_be_closed_gets_a_dialog_instead_of_a_toast() {
+        let (mut launcher, _sent, _ctx) = launcher();
+        launcher.handle(Event::AppOpen { app: "openfarm".into() });
+        assert_eq!(launcher.dialog, Some(Dialog::CloseApp("openfarm".into())));
+        launcher.handle(Event::JobFinished { app: "openfarm".into(), result: Err("OpenFarm is open; close it and try again.".into()) });
+        assert!(launcher.pending_toasts.is_empty());
+        // Another program's message is a toast, as before.
+        launcher.handle(Event::JobFinished { app: "openref".into(), result: Err("OpenRef is open; close it and try again.".into()) });
+        assert_eq!(launcher.pending_toasts.len(), 1);
     }
 
     const NOW: i64 = 1_791_500_000;

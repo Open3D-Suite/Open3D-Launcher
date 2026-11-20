@@ -35,7 +35,12 @@ pub(crate) struct Job<'a> {
     pub replace: bool,
     /// Set only when the person chose this older version by name over a newer installed copy.
     pub downgrade: Option<Downgrade>,
+    /// A program that is open is asked to quit first, where it can be ([`crate::running::closable`]).
+    pub close: bool,
 }
+
+/// How long a program asked to quit has to end before the update gives up.
+const CLOSE_WAIT: std::time::Duration = std::time::Duration::from_secs(30);
 
 /// How a downgrade the person chose is undone if it fails: the installed copy stays until the
 /// older one is in place.
@@ -75,9 +80,9 @@ pub(crate) fn install_at(
     if kind == PackageKind::MaxBundle && crate::max_bundle::max_running() {
         return Err(crate::max_bundle::max_running_error());
     }
-    // Never a program that is open (D-157).
+    // Never a program that is open (D-157); one that can be asked to quit is, when the person said so.
     if app.is_standalone() {
-        program_closed(app)?;
+        closed_or_close(app, job.close, job.stop, &mut *job.phase)?;
     }
     bind_artifact_version(app, release, asset)?;
     // A feed can't send an app back to an older build; only a version the person chose by name
@@ -150,6 +155,19 @@ pub(crate) fn program_exes(app: &SuiteApp) -> Vec<PathBuf> {
 /// `Ok` unless a copy of the program `app` is open (D-157).
 fn program_closed(app: &SuiteApp) -> Result<(), String> {
     closed_now(app, &program_exes(app))
+}
+
+/// `Ok` once no copy of the program `app` is open: with `close`, one that can be asked to quit is
+/// asked and waited for (D-157).
+fn closed_or_close(app: &SuiteApp, close: bool, stop: &Stop, phase: &mut dyn FnMut(JobPhase)) -> Result<(), String> {
+    let exes = program_exes(app);
+    let open = closed_now(app, &exes);
+    if open.is_ok() || !close || !crate::running::closable(app) {
+        return open;
+    }
+    phase(JobPhase::Closing);
+    let ask = || crate::running::ask_to_quit(crate::running::openfarm_port(&crate::running::openfarm_configs()));
+    crate::running::close(app, &exes, &crate::running::SystemProcesses, ask, CLOSE_WAIT, stop)
 }
 
 /// `Ok` unless one of `exes`, the copies of `app`, runs now.

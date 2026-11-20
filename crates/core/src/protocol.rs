@@ -40,6 +40,11 @@ pub enum Command {
     Uninstall {
         app: String,
     },
+    /// `Install` for a program that [`Event::AppOpen`] said is open: asks it to quit first, waits
+    /// for it to end, then installs. If it doesn't end, nothing is changed.
+    CloseAndInstall {
+        app: String,
+    },
     /// Start an installed app, passing `args` (the user's launch flags) on its command line.
     Launch {
         app: String,
@@ -138,6 +143,8 @@ pub enum JobPhase {
     /// A program's Windows Installer package runs: Windows asks for permission, then it installs
     /// or removes the program.
     Permission,
+    /// The program was asked to quit ([`Command::CloseAndInstall`]); waiting for it to end.
+    Closing,
 }
 
 /// A partly downloaded file waiting to be resumed.
@@ -265,6 +272,12 @@ pub enum Event {
     Occupied {
         app: String,
         path: String,
+    },
+    /// An update stopped because the program `app` is open, and the launcher can ask it to quit
+    /// (OpenFarm, which keeps running without a window): `Command::CloseAndInstall` does. It comes
+    /// before the `JobFinished` that says the program is open.
+    AppOpen {
+        app: String,
     },
     /// A job ended: `Ok` carries a short success message, `Err` what went wrong.
     JobFinished {

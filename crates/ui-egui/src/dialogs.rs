@@ -34,6 +34,7 @@ impl LauncherUi {
             Dialog::Notes(id) => modal.show(ctx, |ui| close = self.notes_dialog(ui, id)),
             Dialog::ConfirmUninstall(id) => modal.show(ctx, |ui| close = self.uninstall_dialog(ui, id)),
             Dialog::Replace { app, path } => modal.show(ctx, |ui| close = self.replace_dialog(ui, app, path)),
+            Dialog::CloseApp(id) => modal.show(ctx, |ui| close = self.close_app_dialog(ui, id)),
             Dialog::Settings => modal.show(ctx, |ui| close = self.settings_dialog(ui, host)),
             Dialog::LauncherUpdate(r) => modal.show(ctx, |ui| close = self.launcher_update_dialog(ui, r)),
             Dialog::Versions(id) => modal.show(ctx, |ui| close = self.version_dialog(ui, id)),
@@ -210,6 +211,34 @@ impl LauncherUi {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if widgets::button(ui, tl!("Uninstall"), Kind::Danger, 110.0).clicked() {
                     self.act_command(Command::Uninstall { app: id.to_string() });
+                    close = true;
+                }
+                if widgets::button(ui, tl!("Cancel"), Kind::Secondary, 90.0).clicked() {
+                    close = true;
+                }
+            });
+        });
+        close
+    }
+
+    /// Says that the program is open, so its update stopped, and offers to close it and update it
+    /// (D-157): OpenFarm keeps running without a window, with no other way to close it. Returns
+    /// `true` when the dialog should close, including when the app entry is gone.
+    fn close_app_dialog(&mut self, ui: &mut egui::Ui, id: &str) -> bool {
+        let Some(app) = self.entry(id).map(|e| e.app) else { return true };
+        let t = Tokens::get(ui.ctx());
+        ui.set_width(440.0f32.min(ui.ctx().content_rect().width() - 80.0));
+        Self::title(ui, crate::icons::app(id), &fmt(tl!("{name} is open"), &[("name", app.name)]), "");
+        let what = tl!(
+            "Open3D Launcher can ask it to close now, then update it. Until it is opened again, this computer renders nothing for the farm, and a farm it runs stops."
+        );
+        ui.label(RichText::new(what).color(t.muted));
+        ui.add_space(20.0);
+        let mut close = false;
+        ui.horizontal(|ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if widgets::button(ui, &fmt(tl!("Close {name} and update"), &[("name", app.name)]), Kind::Primary, 0.0).clicked() {
+                    self.act_command(Command::CloseAndInstall { app: id.to_string() });
                     close = true;
                 }
                 if widgets::button(ui, tl!("Cancel"), Kind::Secondary, 90.0).clicked() {

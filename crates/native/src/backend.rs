@@ -469,8 +469,9 @@ impl NativeBackend {
             } else {
                 let approved = match &work {
                     Work::Replace(path) => Some(path.as_str()),
-                    Work::Install | Work::Uninstall => None,
+                    Work::Install | Work::CloseAndInstall | Work::Uninstall => None,
                 };
+                let close = work == Work::CloseAndInstall;
                 let r = run_install(
                     app,
                     &shared,
@@ -478,12 +479,19 @@ impl NativeBackend {
                     http.as_ref(),
                     platform,
                     &options,
-                    existing.as_ref(),
-                    record.as_ref(),
+                    (existing.as_ref(), record.as_ref()),
                     &stop,
-                    approved,
+                    (approved, close),
                     source.as_deref(),
                 );
+                // An open program the launcher can ask to quit: offer that, before the message.
+                if let Err(e) = &r
+                    && !close
+                    && crate::running::closable(app)
+                    && *e == crate::running::open_error(app)
+                {
+                    shared.emit(Event::AppOpen { app: app.id.to_string() });
+                }
                 // Stopped by the connection rather than by the user: say so, and how to go on.
                 match r {
                     Err(e) if e == PAUSED && stop.check().is_ok() => {
@@ -565,6 +573,8 @@ impl NativeBackend {
 enum Work {
     /// Install or update.
     Install,
+    /// Install or update, asking the program to quit first (see [`Command::CloseAndInstall`]).
+    CloseAndInstall,
     /// Install over the path the user agreed to overwrite (see [`Command::Replace`]).
     Replace(String),
     Uninstall,
@@ -646,10 +656,9 @@ fn run_install(
     http: Option<&Http>,
     platform: Option<Platform>,
     options: &BackendOptions,
-    existing: Option<&Installed>,
-    record: Option<&crate::manifest::Record>,
+    (existing, record): (Option<&Installed>, Option<&crate::manifest::Record>),
     stop: &Stop,
-    approved: Option<&str>,
+    (approved, close): (Option<&str>, bool),
     _source: Option<&dyn ReleaseSource>,
 ) -> Result<String, String> {
     let latest = shared.latest.lock().unwrap_or_else(PoisonError::into_inner).get(app.id).cloned();
@@ -677,7 +686,7 @@ fn run_install(
         last_emit = Instant::now();
         shared.emit(Event::Progress { app: app.id.to_string(), phase: p });
     };
-    let mut job = Job { http, paths, stop, phase: &mut phase, install_locations: &options.install_locations, replace, downgrade };
+    let mut job = Job { http, paths, stop, phase: &mut phase, install_locations: &options.install_locations, replace, downgrade, close };
     let mut commit_record = |record: &crate::manifest::Record| {
         let mut manifest = shared.manifest.lock().unwrap_or_else(PoisonError::into_inner);
         let mut updated = manifest.clone();
@@ -1339,6 +1348,9 @@ impl Backend for NativeBackend {
             }
             Command::Uninstall { app } => {
                 self.start_job(&app, Work::Uninstall);
+            }
+            Command::CloseAndInstall { app } => {
+                self.start_job(&app, Work::CloseAndInstall);
             }
             Command::Pause { app } => {
                 if let Some(stop) = self.shared.jobs.lock().unwrap_or_else(PoisonError::into_inner).get(&app) {

@@ -62,6 +62,10 @@
 	Removing…	Quitando…
 	Windows will ask for permission…	Windows pedirá permiso…
 	Windows will ask for permission to remove it.	Windows pedirá permiso para quitarla.
+	Closing…	Cerrando…
+	{name} is open	{name} está abierta
+	Open3D Launcher can ask it to close now, then update it. Until it is opened again, this computer renders nothing for the farm, and a farm it runs stops.	Open3D Launcher puede pedirle que se cierre ahora y luego actualizarla. Hasta que se vuelva a abrir, este equipo no renderiza nada para la granja, y la granja que lleve se detiene.
+	Close {name} and update	Cerrar {name} y actualizar
 	Pause download	Pausar la descarga
 	Cancel download	Cancelar la descarga
 	Resume download	Reanudar la descarga
@@ -263,6 +267,7 @@ filter	Installed	Instaladas
 @msg	{name} was removed. A program that is still running keeps using files of the copy that was installed until it closes.	Se quitó {name}. Un programa que sigue abierto seguirá usando archivos de la copia que estaba instalada hasta que se cierre.
 @msg	{name} is running. Quit it, then try again.	{name} está abierta. Ciérrala y vuelve a intentarlo.
 @msg	{name} is open; close it and try again.	{name} está abierta; ciérrala y vuelve a intentarlo.
+@msg	{name} didn't close when asked, so it wasn't updated. Close it and try again.	{name} no se cerró al pedírselo, así que no se actualizó. Ciérrala y vuelve a intentarlo.
 @msg	{name} wasn't installed: another installation is in progress. Wait for it to finish, then try again.	{name} no se instaló: hay otra instalación en curso. Espera a que termine y vuelve a intentarlo.
 @msg	{name} wasn't removed: another installation is in progress. Wait for it to finish, then try again.	{name} no se quitó: hay otra instalación en curso. Espera a que termine y vuelve a intentarlo.
 @msg	{name} wasn't installed: Windows didn't allow it, administrator permission is needed.	{name} no se instaló: Windows no lo permitió; hace falta permiso de administrador.

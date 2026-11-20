@@ -72,7 +72,7 @@ as a change that makes it old.
   launcher always from the zip, into its `Open3DLauncherData\Programs\<App>`, with no shortcut. The bundle's
   `AppVersion` or the exe's file version must be the release's; no published SHA-256, no install.
 - No plug-in is changed while a `3dsmax.exe` runs, batch and farm renders included, no program while a
-  copy of it runs (`running.rs`). The old copy waits in `.open3d-<id>` until the new one is in place.
+  copy of it runs (`running.rs`; it can ask OpenFarm to quit). Old copies wait in `.open3d-<id>` till replaced.
 - The hosted catalog counts only if its signature matches the built-in public key; the private key is not
   in the repo. It can add apps, but not change the name, repo, package or exe of a built-in one.
 - Interface texts are English in the code (`t`, `tl!`, `tn`), with their Spanish in `es.tsv`. The test for

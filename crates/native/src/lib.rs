@@ -25,6 +25,7 @@ mod pins;
 #[cfg(windows)]
 mod portable;
 pub mod process;
+mod program_data;
 pub mod proxy;
 mod running;
 mod screenshots;
