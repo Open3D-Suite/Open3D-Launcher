@@ -24,15 +24,18 @@ pub struct App {
     /// Who makes it, shown as "by <developer>" in the update prompt. [`DEVELOPER`] unless the app
     /// says otherwise.
     pub developer: &'static str,
+    /// Its folder among the Open3D folders, `%APPDATA%\Open3D\<folder>` and
+    /// `%LOCALAPPDATA%\Open3D\<folder>` (D-042, D-044): its name unless the app says otherwise.
+    pub folder: &'static str,
 }
 
 /// The developer of every Open3D app.
 pub const DEVELOPER: &str = "Open3D";
 
 impl App {
-    /// An app with no former names and no icon.
+    /// An app with no former names and no icon, whose folder is its name.
     pub const fn new(id: &'static str, name: &'static str, tagline: &'static str, repo: &'static str) -> Self {
-        Self { id, name, tagline, repo, former_ids: &[], former_names: &[], icon_png: None, accent: None, developer: DEVELOPER }
+        Self { id, name, tagline, repo, former_ids: &[], former_names: &[], icon_png: None, accent: None, developer: DEVELOPER, folder: name }
     }
 
     /// `io.github.carlesllavata.<id>`: macOS bundle id, Flatpak id and Linux desktop-file id.

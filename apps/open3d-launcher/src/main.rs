@@ -6,6 +6,7 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+mod folders;
 mod logging;
 mod motion;
 mod settings_file;
@@ -68,6 +69,10 @@ fn main() -> ExitCode {
         Instance::Secondary => return ExitCode::SUCCESS,
         Instance::Primary(rx) => rx,
     };
+    // Once this is the only launcher running, and before anything is written into the launcher's
+    // Open3D folders: what a launcher from before kept in its old folders is copied there, once
+    // (`folders`). What could not be copied is said in the window.
+    let not_copied = folders::carry_over(APP_ID);
     // The log file lives in the launcher's data folder (beside the executable in portable mode);
     // opened after the arguments (so `--version` leaves no file behind) and once this is the only
     // launcher running, so a second start doesn't rotate away the running one's log. Records
@@ -103,6 +108,10 @@ fn main() -> ExitCode {
     let backend_waker = waker.clone();
     let settings_path = settings_file::path(APP_ID);
     let mut launcher = Launcher::new(Box::new(NativeBackend::new(move || backend_waker.wake())), starts, settings_path.clone());
+    if !not_copied.is_empty() {
+        let e = not_copied.join("; ");
+        launcher.ui.tell(format!("Some files of the earlier Open3D Launcher couldn't be copied to its new folders: {e}"), true);
+    }
     // Started hidden at login where a window can't hide: start in the tray without mapping one,
     // so no window flashes up. Without a tray to come back from, the window opens after all.
     let mut window = true;

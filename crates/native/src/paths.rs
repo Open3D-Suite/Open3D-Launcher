@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Where the launcher keeps its own files.
+//!
+//! Everything but its settings (`app.ron`, see the launcher's `folders.rs`) is in
+//! `%LOCALAPPDATA%\Open3D\Launcher` (D-044), or in `Launcher` inside the folder `OPEN3D_DATA_DIR`
+//! names; before, it was in `%LOCALAPPDATA%\Open3D Launcher`, which stays in use until the
+//! launcher has copied what it keeps of it ([`craft_update::in_use`]). A portable launcher keeps
+//! everything in `Open3DLauncherData` beside it.
 
+use std::ffi::OsString;
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -13,16 +20,21 @@ pub struct Paths {
     pub cache: PathBuf,
 }
 
-const DIR: &str = if cfg!(any(target_os = "macos", target_os = "windows")) { "Open3D Launcher" } else { "open3d-launcher" };
+/// The launcher's folder among the Open3D folders: `%APPDATA%\Open3D\Launcher` for its settings,
+/// `%LOCALAPPDATA%\Open3D\Launcher` for the rest.
+pub const FOLDER: &str = craft_update::suite::LAUNCHER.folder;
+
+pub use craft_update::{TEST_OLD_FOLDERS, exists, in_use, open3d_data_dir_from};
 
 impl Paths {
+    /// In portable mode `data` and `cache` in `Open3DLauncherData`; otherwise both are the
+    /// launcher's per-user folder ([`per_user_dir`]).
     pub fn new() -> Result<Self, String> {
         if let Some(root) = portable_root() {
             return Ok(Self::under(&root));
         }
-        let data = dirs::data_local_dir().ok_or("no per-user data folder on this system")?.join(DIR);
-        let cache = dirs::cache_dir().ok_or("no per-user cache folder on this system")?.join(DIR);
-        Ok(Self { data, cache })
+        let own = craft_update::Paths::per_user(&craft_update::suite::LAUNCHER)?;
+        Ok(Self { data: own.data, cache: own.cache })
     }
 
     /// For tests: everything under one folder.
@@ -69,6 +81,20 @@ impl Paths {
     }
 }
 
+/// The launcher's per-user folder, the one of [`data_folders`] that is in use: also for a
+/// portable launcher, which keeps there only the secret launchers of this account share
+/// (`single_instance`). `None` when the system has no per-user data folder.
+pub fn per_user_dir() -> Option<PathBuf> {
+    craft_update::Paths::per_user(&craft_update::suite::LAUNCHER).ok().map(|paths| paths.data)
+}
+
+/// The launcher's per-user folder among the Open3D folders and the one it used before them:
+/// `%LOCALAPPDATA%\Open3D\Launcher` (or `Launcher` in the folder `OPEN3D_DATA_DIR` names) and
+/// `%LOCALAPPDATA%\Open3D Launcher`, for copying the old one over at start.
+pub fn data_folders() -> (Option<PathBuf>, Option<PathBuf>) {
+    craft_update::per_user_dirs(&craft_update::suite::LAUNCHER)
+}
+
 /// Writes `bytes` to `path` via a temporary file and a rename, so a crash never leaves half a file.
 pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
     let dir = path.parent().ok_or("no parent folder")?;
@@ -88,18 +114,41 @@ pub fn portable_root() -> Option<PathBuf> {
 }
 
 /// The variable that names the folder of `settings.json`, the language every Open3D app shares,
-/// in place of `%APPDATA%\Open3D`.
+/// and of each app's settings, in place of `%APPDATA%\Open3D`.
 pub const SHARED_SETTINGS_VARIABLE: &str = "OPEN3D_SETTINGS_DIR";
+
+/// The variable that names the folder of each Open3D app's other files in place of
+/// `%LOCALAPPDATA%\Open3D`.
+pub const SHARED_DATA_VARIABLE: &str = craft_update::DATA_DIR_VARIABLE;
+
+/// The folder in `Open3DLauncherData` that a portable launcher gives the programs it opens in place
+/// of `%LOCALAPPDATA%\Open3D`, as `Open3DLauncherData` itself stands for `%APPDATA%\Open3D`.
+pub const PORTABLE_DATA: &str = "Local";
 
 /// Where a portable launcher keeps the language every Open3D app shares: in its own data folder,
 /// so a suite carried on a stick keeps it and writes nothing into the profile of the computer it
 /// is plugged into. The programs it opens are told so. `None` for a launcher that is installed, or
 /// when `OPEN3D_SETTINGS_DIR` already names a folder: then it is the one every app uses.
 pub fn portable_settings_dir() -> Option<PathBuf> {
-    settings_dir_of(std::env::var_os(SHARED_SETTINGS_VARIABLE), portable_root())
+    unless_named(std::env::var_os(SHARED_SETTINGS_VARIABLE), portable_root())
 }
 
-fn settings_dir_of(named: Option<std::ffi::OsString>, portable: Option<PathBuf>) -> Option<PathBuf> {
+/// The variables a program opened from this launcher is given (D-049): for a portable launcher,
+/// `OPEN3D_SETTINGS_DIR` and `OPEN3D_DATA_DIR` naming folders inside `Open3DLauncherData`, so the
+/// program keeps its files in the portable folder too. A variable already set is left as it is,
+/// and the program inherits it. None for a launcher that is installed.
+pub fn portable_variables() -> Vec<(&'static str, PathBuf)> {
+    variables_for(std::env::var_os(SHARED_SETTINGS_VARIABLE), std::env::var_os(SHARED_DATA_VARIABLE), portable_root())
+}
+
+fn variables_for(settings: Option<OsString>, data: Option<OsString>, portable: Option<PathBuf>) -> Vec<(&'static str, PathBuf)> {
+    let settings = unless_named(settings, portable.clone()).map(|dir| (SHARED_SETTINGS_VARIABLE, dir));
+    let data = unless_named(data, portable.map(|root| root.join(PORTABLE_DATA))).map(|dir| (SHARED_DATA_VARIABLE, dir));
+    settings.into_iter().chain(data).collect()
+}
+
+/// `portable`, unless a variable already names a folder.
+fn unless_named(named: Option<OsString>, portable: Option<PathBuf>) -> Option<PathBuf> {
     if named.is_some_and(|dir| !dir.is_empty()) { None } else { portable }
 }
 
@@ -110,11 +159,31 @@ mod tests {
     #[test]
     fn a_portable_launcher_keeps_the_shared_language_in_its_own_folder() {
         let portable = PathBuf::from("Suite").join("Open3DLauncherData");
-        assert_eq!(settings_dir_of(None, Some(portable.clone())), Some(portable.clone()));
-        assert_eq!(settings_dir_of(Some("".into()), Some(portable.clone())), Some(portable.clone()));
+        assert_eq!(unless_named(None, Some(portable.clone())), Some(portable.clone()));
+        assert_eq!(unless_named(Some("".into()), Some(portable.clone())), Some(portable.clone()));
         // A folder the variable names wins; an installed launcher uses the computer's file.
-        assert_eq!(settings_dir_of(Some("Elsewhere".into()), Some(portable)), None);
-        assert_eq!(settings_dir_of(None, None), None);
+        assert_eq!(unless_named(Some("Elsewhere".into()), Some(portable)), None);
+        assert_eq!(unless_named(None, None), None);
+    }
+
+    /// A portable launcher gives the programs it opens both folders inside itself (D-049).
+    #[test]
+    fn a_portable_launcher_gives_the_programs_it_opens_both_folders_inside_itself() {
+        let portable = PathBuf::from("Suite").join("Open3DLauncherData");
+        let both = vec![(SHARED_SETTINGS_VARIABLE, portable.clone()), (SHARED_DATA_VARIABLE, portable.join("Local"))];
+        assert_eq!(variables_for(None, None, Some(portable.clone())), both);
+        assert_eq!(variables_for(Some("".into()), Some("".into()), Some(portable.clone())), both);
+        // A variable already set is inherited as it is.
+        assert_eq!(variables_for(Some("Elsewhere".into()), None, Some(portable.clone())), vec![(SHARED_DATA_VARIABLE, portable.join("Local"))]);
+        assert_eq!(variables_for(None, Some("Elsewhere".into()), Some(portable.clone())), vec![(SHARED_SETTINGS_VARIABLE, portable)]);
+        // An installed launcher gives none.
+        assert_eq!(variables_for(None, None, None), vec![]);
+    }
+
+    #[test]
+    fn the_launchers_folder_is_named_launcher() {
+        assert_eq!(FOLDER, "Launcher");
+        assert_eq!(SHARED_DATA_VARIABLE, "OPEN3D_DATA_DIR");
     }
 
     #[test]

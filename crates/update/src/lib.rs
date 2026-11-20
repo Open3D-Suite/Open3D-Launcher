@@ -27,7 +27,7 @@ mod version;
 
 pub use app::App;
 pub use http::{Fetched, Http, Stop};
-pub use paths::Paths;
+pub use paths::{DATA_DIR_VARIABLE, Paths, TEST_OLD_FOLDERS, exists, in_use, open3d_data_dir_from, per_user_dirs};
 pub use platform::{Arch, Os, PackageKind, Platform};
 pub use protocol::JobPhase;
 pub use release::{Asset, Release};

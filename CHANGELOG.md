@@ -12,6 +12,15 @@ What each version of the Open3D Launcher adds, newest first.
   Choosing Auto also makes the Open3D apps follow Windows again.
 - **A portable launcher keeps that language in its own folder,** beside it, and the programs you open from
   it use it too.
+- **The launcher's files move to the Open3D folders:** its settings to `%APPDATA%\Open3D\Launcher`, and the
+  record of the apps it installed, its downloads and its logs to `%LOCALAPPDATA%\Open3D\Launcher`. The first
+  time this version starts it copies your settings and the record of your apps from the old folders,
+  `%APPDATA%\io.github.carlesllavata.open3d-launcher` and `%LOCALAPPDATA%\Open3D Launcher`, so nothing has
+  to be set up again; downloads and logs start afresh. The old folders are left as they were, and an older
+  launcher still finds its files there.
+- **A portable launcher keeps the files of the programs it opens in its own folder too:** their settings
+  in `Open3DLauncherData` and the rest in `Open3DLauncherData\Local` (OpenRef for now, the others as they
+  are updated).
 
 ## 0.3.4 — 16 November 2026
 

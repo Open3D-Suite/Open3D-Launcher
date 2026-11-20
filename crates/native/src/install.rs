@@ -450,10 +450,11 @@ pub(crate) fn launch(app: &SuiteApp, installed: &Installed, paths: &Paths, args:
     // or a launcher whose data folder moved.
     let pins = craft_update::pins::Pins::default_path();
     let mut env: Vec<(&str, &std::ffi::OsStr)> = pins.iter().map(|p| (craft_update::pins::PATH_ENV, p.as_os_str())).collect();
-    // A portable launcher keeps the language every Open3D app shares in its own folder: a program
-    // opened from it shows that language.
-    let shared = crate::paths::portable_settings_dir();
-    env.extend(shared.iter().map(|dir| (crate::paths::SHARED_SETTINGS_VARIABLE, dir.as_os_str())));
+    // A portable launcher keeps the language every Open3D app shares in its own folder, and gives a
+    // program opened from it both its folders inside that one (D-049): the program shows that
+    // language and keeps its own files in the portable folder too.
+    let portable = crate::paths::portable_variables();
+    env.extend(portable.iter().map(|(variable, dir)| (*variable, dir.as_os_str())));
     if installed.source == InstallSource::Bundle || path.join("PackageContents.xml").is_file() {
         return crate::max_bundle::launch(app).map_err(|e| format!("Couldn't open {}: {e}", app.name));
     }

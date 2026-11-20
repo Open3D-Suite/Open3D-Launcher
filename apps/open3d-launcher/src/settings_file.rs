@@ -11,16 +11,17 @@ use std::path::{Path, PathBuf};
 
 /// Where the settings file is. In portable mode it is inside `Open3DLauncherData`, so a suite
 /// carried on a stick keeps its settings when it is plugged into another computer. Without
-/// `portable.txt` it is eframe's own folder, which is in the user's profile and cannot travel.
+/// `portable.txt` it is in the launcher's settings folder, `%APPDATA%\Open3D\Launcher`
+/// (`folders::settings_dir`), which is in the user's profile and cannot travel.
 pub fn path(app_id: &str) -> Option<PathBuf> {
     open3d_launcher_native::paths::portable_root()
         .map(|root| portable_settings(&root))
-        .or_else(|| eframe::storage_dir(app_id).map(|dir| dir.join("app.ron")))
+        .or_else(|| crate::folders::settings_dir(app_id).map(|dir| dir.join(crate::folders::SETTINGS_FILE)))
 }
 
 /// The settings file inside a portable suite: the same `data` folder `Paths` already uses.
 fn portable_settings(root: &Path) -> PathBuf {
-    root.join("data").join("app.ron")
+    root.join("data").join(crate::folders::SETTINGS_FILE)
 }
 
 /// The value stored under `key`, if the file has one that still reads.

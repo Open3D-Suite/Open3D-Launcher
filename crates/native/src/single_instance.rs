@@ -57,12 +57,15 @@ const MAX_GREETING: usize = 256;
 ///
 /// The fixed loopback port is reachable by any local process, so a `hello` alone can't be trusted
 /// to decide the launcher's lifecycle: another local user could send a newer version and make an
-/// idle launcher quit (CWE-862). The token lives in the user's own data folder, readable only by
-/// this account. Mutual challenge-response uses this secret without ever sending it across the wire
+/// idle launcher quit (CWE-862). The token lives in the launcher's per-user data folder, readable
+/// only by this account, for every launcher of the account, a portable one too
+/// ([`crate::paths::per_user_dir`]): an older one in the folder it used before, a newer one in
+/// `%LOCALAPPDATA%\Open3D\Launcher` once it has copied the token there, so they still recognise
+/// each other. Mutual challenge-response uses this secret without ever sending it across the wire
 /// (CWE-522, CWE-287).
 fn token() -> Option<String> {
     use std::io::Read;
-    let dir = dirs::data_local_dir()?.join(if cfg!(any(target_os = "macos", target_os = "windows")) { "Open3D Launcher" } else { "open3d-launcher" });
+    let dir = crate::paths::per_user_dir()?;
     let path = dir.join(".instance-token");
     if let Ok(mut f) = std::fs::File::open(&path) {
         let mut s = String::new();

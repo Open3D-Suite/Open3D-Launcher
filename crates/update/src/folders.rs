@@ -50,17 +50,6 @@ fn pick_host_data_dir(in_flatpak: bool, host_xdg: Option<PathBuf>, home: Option<
     local
 }
 
-/// Where per-user caches live on this machine.
-pub fn cache_dir() -> Option<PathBuf> {
-    if cfg!(target_os = "windows") {
-        local_app_data()
-    } else if cfg!(target_os = "macos") {
-        home_dir().map(|h| h.join("Library").join("Caches"))
-    } else {
-        absolute_env("XDG_CACHE_HOME").or_else(|| home_dir().map(|h| h.join(".cache")))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -69,7 +58,6 @@ mod tests {
     fn the_folders_are_absolute_when_there_is_a_home() {
         if home_dir().is_some() {
             assert!(data_local_dir().is_some_and(|p| p.is_absolute()));
-            assert!(cache_dir().is_some_and(|p| p.is_absolute()));
         }
     }
 

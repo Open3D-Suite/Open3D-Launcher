@@ -432,6 +432,13 @@ impl LauncherUi {
         self.act(UiAction::Toast { text: text.into(), error });
     }
 
+    /// Tells the person `message`, English as every status message is (translated where it is
+    /// shown, through its `@msg` row), in a toast the first time the window draws: for what the
+    /// shell found before there was a window, such as files of an earlier launcher it couldn't copy.
+    pub fn tell(&mut self, message: impl Into<String>, error: bool) {
+        self.toast(message, error);
+    }
+
     /// The person chose a language in Settings (`auto` or a code): the launcher shows it at once
     /// and every Open3D app takes it the next time it starts (D-056, D-057), as it is written to the
     /// shared `settings.json`. `auto` takes the shared preference out, so Windows decides again
@@ -1213,6 +1220,20 @@ mod tests {
             launcher.pending_toasts
         );
         let _ = std::fs::remove_file(&dir);
+    }
+
+    #[test]
+    /// What the shell tells the person before there is a window waits for the first one, as an
+    /// error toast that the Spanish catalog translates.
+    fn what_the_shell_tells_waits_for_the_window_and_is_translated() {
+        let (mut launcher, _sent, _ctx) = launcher();
+        let text = "Some files of the earlier Open3D Launcher couldn't be copied to its new folders: C:\\old\\installed.json (in use)";
+        launcher.tell(text, true);
+        assert_eq!(launcher.pending_toasts, [(text.to_string(), true)]);
+        assert_eq!(
+            crate::i18n::message(crate::i18n::Lang::from_code("es").unwrap(), text),
+            "Algunos archivos del Open3D Launcher anterior no se pudieron copiar a sus carpetas nuevas: C:\\old\\installed.json (in use)"
+        );
     }
 
     #[test]

@@ -75,11 +75,22 @@ as a change that makes it old.
   in the repo. It can add apps, but not change the name, repo, package or exe of a built-in one.
 - Interface texts are English in the code (`t`, `tl!`, `tn`), with their Spanish in `es.tsv`. The test for
   missing rows reads a fixed list of files; `versions.rs` and `theme.rs` are not on it.
+- Its own files (`apps/open3d-launcher/src/folders.rs`, the `paths.rs` of `crates/native` and
+  `crates/update`): eframe's `app.ron` in `%APPDATA%\Open3D\Launcher`, the rest (`installed.json`, logs,
+  downloads, caches) in `%LOCALAPPDATA%\Open3D\Launcher`; `OPEN3D_SETTINGS_DIR` and `OPEN3D_DATA_DIR` move
+  them. Right after the single-instance claim, `folders::carry_over` copies once all of
+  `%APPDATA%\io.github.carlesllavata.open3d-launcher\data` and, of `%LOCALAPPDATA%\Open3D Launcher`, only
+  `folders::KEPT` (`installed.json`, `.instance-token`, the self-update records); both are left as they
+  were. Until then, or while a copy fails, the old folder is the one in use (`in_use`), for the update
+  helper and the token too; what was not copied is said in a toast. Only debug builds read
+  `OPEN3D_LAUNCHER_TEST_OLD_FOLDERS`, whose `Roaming` and `Local` stand for the old folders. A portable
+  launcher keeps everything in `Open3DLauncherData` and copies nothing.
 - The language is the one every Open3D app shares, in `settings.json` (`open3d_settings.rs`): in
   `%APPDATA%\Open3D`, in the folder `OPEN3D_SETTINGS_DIR` names, or, for a portable launcher, in
-  `Open3DLauncherData`, which it also gives as `OPEN3D_SETTINGS_DIR` to the programs it opens. At start
-  `Settings::take_shared_language` puts its preference in `Settings.language`, or with none carries the
-  launcher's own `en` or `es` over once (`language_shared`), or leaves `auto`. `auto` is the language of
+  `Open3DLauncherData`, which it gives as `OPEN3D_SETTINGS_DIR`, with its `Local` as `OPEN3D_DATA_DIR`, to
+  the programs it opens (`paths::portable_variables`). At start `Settings::take_shared_language` puts its
+  preference in `Settings.language`, or with none carries the launcher's own `en` or `es` over once
+  (`language_shared`), or leaves `auto`. `auto` is the language of
   Windows: Spanish if it is Spanish, else English; `OPEN3D_LAUNCHER_LOCALE` overrides it. The language
   picker writes the file (`LauncherUi::choose_language`; `auto` removes the key).
 - `unsafe` is forbidden in the workspace but for `crates/ui-egui`, where it is denied and allowed by name
@@ -96,5 +107,6 @@ as a change that makes it old.
 - Adding an app: its entry in `crates/core/catalog.toml`, `assets/app-icons/<id>.png` and its line in
   `catalog::app_icon_png`, its `es.tsv` rows, and the catalog signed again. `publish.py catalog` does not
   update the copy in `crates/core/tests/fixtures/`, which a test checks.
-- Only debug builds obey `OPEN3D_LAUNCHER_IGNORE_MAX` and `OPEN3D_LAUNCHER_APPS_ROOT`; only `local-mirror`
-  builds obey `OPEN3D_LAUNCHER_DOWNLOAD_BASE`. Comments name a `cargo xtask local serve` that does not exist.
+- Only debug builds obey `OPEN3D_LAUNCHER_IGNORE_MAX`, `OPEN3D_LAUNCHER_APPS_ROOT` and
+  `OPEN3D_LAUNCHER_TEST_OLD_FOLDERS`; only `local-mirror` builds obey `OPEN3D_LAUNCHER_DOWNLOAD_BASE`.
+  Comments name a `cargo xtask local serve` that does not exist.
