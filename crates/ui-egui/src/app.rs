@@ -680,8 +680,9 @@ impl LauncherUi {
             Err(e) if e == PAUSED => {}
             Err(e) if e == CANCELLED && launcher => self.toast(tl!("Update cancelled"), false),
             // An install's own cancellations end as INSTALL_CANCELLED, so past the
-            // download this is a removal called off while it waited for the installer.
-            Err(e) if e == CANCELLED && matches!(last, Some(JobPhase::Waiting | JobPhase::Removing)) => {
+            // download this is a removal called off while it waited for the installer, or at
+            // Windows' permission prompt.
+            Err(e) if e == CANCELLED && matches!(last, Some(JobPhase::Waiting | JobPhase::Removing | JobPhase::Permission)) => {
                 self.toast(tl!("Uninstall cancelled"), false);
             }
             Err(e) if e == CANCELLED => self.toast(tl!("Download cancelled"), false),
@@ -1123,7 +1124,7 @@ mod tests {
         /// No install management, a neutral reveal label and no self-update, so UI paths needing them
         /// stay off.
         fn capabilities(&self) -> Capabilities {
-            Capabilities { manage_apps: false, reveal_label: "Show", self_update: false }
+            Capabilities { manage_apps: false, reveal_label: "Show", self_update: false, windows_installer: false }
         }
         /// Reports no platform, so the UI offers no OS-specific package format.
         fn platform(&self) -> Option<Platform> {

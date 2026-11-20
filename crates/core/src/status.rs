@@ -14,6 +14,9 @@ pub enum InstallSource {
     Bundle,
     /// Open3D: a standalone app found in its folder under `Programs\Open3D` (unzipped there by hand).
     AppFolder,
+    /// Open3D: a program installed for everyone by its Windows Installer package, in
+    /// `Program Files\Open3D\<App>`, found by its Uninstall key.
+    Msi,
 }
 
 impl InstallSource {
@@ -22,13 +25,14 @@ impl InstallSource {
             Self::Launcher => "Open3D Launcher",
             Self::Bundle => "3ds Max plug-in",
             Self::AppFolder => "Windows app",
+            Self::Msi => "Windows Installer",
         }
     }
 
     /// Whether the launcher may replace or remove this copy itself. Packages owned by a system
     /// package manager (deb, rpm, Flatpak) are updated through that manager instead.
     pub fn launcher_can_update(self) -> bool {
-        matches!(self, Self::Launcher | Self::Bundle | Self::AppFolder)
+        matches!(self, Self::Launcher | Self::Bundle | Self::AppFolder | Self::Msi)
     }
 }
 

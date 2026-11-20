@@ -626,8 +626,15 @@ fn install_plan(
         Asking::Install => None,
         Asking::Answer(system) => Some(system),
     };
-    let (asset, kind) = planned_asset_on(app, &release, platform, options, (existing, record), system)
-        .ok_or_else(|| format!("{} {} has no download for {}", app.name, release.version_label(), platform.label()))?;
+    let (asset, kind) = planned_asset_on(app, &release, platform, options, (existing, record), system).ok_or_else(|| match existing {
+        // Never two copies of a program: its package's copy is never joined by a zip's.
+        Some(inst) if inst.source == open3d_launcher_core::InstallSource::Msi => format!(
+            "{} {} has no Windows Installer package, and the copy installed came from one. Choose a version that has one.",
+            app.name,
+            release.version_label()
+        ),
+        _ => format!("{} {} has no download for {}", app.name, release.version_label(), platform.label()),
+    })?;
     Ok(InstallPlan { release, asset, kind })
 }
 
@@ -1419,7 +1426,12 @@ impl Backend for NativeBackend {
             Some(Os::Windows) => "Show in Explorer",
             _ => "Show in Files",
         };
-        Capabilities { manage_apps: true, reveal_label, self_update: self.shared.self_install.get().is_some_and(Option::is_some) }
+        Capabilities {
+            manage_apps: true,
+            reveal_label,
+            self_update: self.shared.self_install.get().is_some_and(Option::is_some),
+            windows_installer: crate::paths::portable_root().is_none(),
+        }
     }
 
     fn platform(&self) -> Option<Platform> {

@@ -386,6 +386,17 @@ fn shortcut_target(link: &Path) -> Option<PathBuf> {
     shortcut.GetPath(None, co::SLGP::RAWPATH).ok().filter(|target| !target.is_empty()).map(PathBuf::from)
 }
 
+/// What other modules' tests need.
+#[cfg(test)]
+pub(crate) mod testing {
+    use std::path::Path;
+
+    /// A shortcut at `link` to `exe`, as a first install leaves one.
+    pub(crate) fn shortcut(link: &Path, exe: &Path) {
+        super::write_shortcut(link, exe, "Sample program").unwrap();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

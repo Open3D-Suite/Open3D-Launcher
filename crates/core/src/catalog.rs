@@ -19,7 +19,8 @@ pub enum AppKind {
 pub enum AppPackage {
     /// A 3ds Max plug-in bundle in `ApplicationPlugins`; opening it starts 3ds Max.
     MaxBundle,
-    /// A program of its own (`<App>.exe`) in its folder under `Programs\Open3D`.
+    /// A program of its own (`<App>.exe`) in its folder under `Program Files\Open3D`, or under the
+    /// user's `Programs\Open3D` when it came from a zip.
     Standalone,
 }
 
@@ -33,11 +34,13 @@ impl AppPackage {
         }
     }
 
-    /// The package formats an app of this kind is installed from, best first.
+    /// The package formats an app of this kind is installed from, best first: a program from its
+    /// Windows Installer package where the release has one and the launcher is installed (D-047),
+    /// else from its zip (every release before the packages, and a portable launcher: D-153).
     pub fn kinds(self) -> &'static [crate::PackageKind] {
         match self {
             Self::MaxBundle => &[crate::PackageKind::MaxBundle],
-            Self::Standalone => &[crate::PackageKind::AppZip],
+            Self::Standalone => &[crate::PackageKind::Msi, crate::PackageKind::AppZip],
         }
     }
 }
@@ -239,7 +242,7 @@ mod tests {
         assert_eq!(AppPackage::from_catalog(Some("3dsmax")), Some(AppPackage::MaxBundle));
         assert_eq!(AppPackage::from_catalog(Some("standalone")), Some(AppPackage::Standalone));
         assert_eq!(AppPackage::from_catalog(Some("installer")), None);
-        assert_eq!(AppPackage::Standalone.kinds(), [crate::PackageKind::AppZip]);
+        assert_eq!(AppPackage::Standalone.kinds(), [crate::PackageKind::Msi, crate::PackageKind::AppZip]);
         assert_eq!(AppPackage::MaxBundle.kinds(), [crate::PackageKind::MaxBundle]);
     }
 
@@ -249,7 +252,7 @@ mod tests {
         assert_eq!(standalone, ["openview", "opengaussian", "openref", "openfarm"]);
         let openview = SUITE.iter().find(|a| a.id == "openview").unwrap();
         assert_eq!((openview.name, openview.repo), ("OpenView", "carlesllavata/OpenView"));
-        assert_eq!(openview.kinds(), [crate::PackageKind::AppZip]);
+        assert_eq!(openview.kinds(), [crate::PackageKind::Msi, crate::PackageKind::AppZip]);
         assert_eq!(openview.exe_relative(), "OpenView.exe");
         let opengaussian = SUITE.iter().find(|a| a.id == "opengaussian").unwrap();
         assert_eq!((opengaussian.name, opengaussian.repo), ("OpenGaussian", "carlesllavata/OpenGaussian"));

@@ -85,7 +85,7 @@ impl Backend for Fake {
         out
     }
     fn capabilities(&self) -> Capabilities {
-        Capabilities { manage_apps: self.manage, reveal_label: "Show in Explorer", self_update: self.manage }
+        Capabilities { manage_apps: self.manage, reveal_label: "Show in Explorer", self_update: self.manage, windows_installer: self.manage }
     }
     fn platform(&self) -> Option<Platform> {
         Some(Platform { os: Os::Windows, arch: Arch::X64 })

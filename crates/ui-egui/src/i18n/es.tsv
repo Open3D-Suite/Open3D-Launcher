@@ -60,6 +60,8 @@
 	Installing, then restarting…	Instalando y reiniciando…
 	Installing…	Instalando…
 	Removing…	Quitando…
+	Windows will ask for permission…	Windows pedirá permiso…
+	Windows will ask for permission to remove it.	Windows pedirá permiso para quitarla.
 	Pause download	Pausar la descarga
 	Cancel download	Cancelar la descarga
 	Resume download	Reanudar la descarga
@@ -261,6 +263,21 @@ filter	Installed	Instaladas
 @msg	{name} was removed. A program that is still running keeps using files of the copy that was installed until it closes.	Se quitó {name}. Un programa que sigue abierto seguirá usando archivos de la copia que estaba instalada hasta que se cierre.
 @msg	{name} is running. Quit it, then try again.	{name} está abierta. Ciérrala y vuelve a intentarlo.
 @msg	{name} is open; close it and try again.	{name} está abierta; ciérrala y vuelve a intentarlo.
+@msg	{name} wasn't installed: another installation is in progress. Wait for it to finish, then try again.	{name} no se instaló: hay otra instalación en curso. Espera a que termine y vuelve a intentarlo.
+@msg	{name} wasn't removed: another installation is in progress. Wait for it to finish, then try again.	{name} no se quitó: hay otra instalación en curso. Espera a que termine y vuelve a intentarlo.
+@msg	{name} wasn't installed: Windows didn't allow it, administrator permission is needed.	{name} no se instaló: Windows no lo permitió; hace falta permiso de administrador.
+@msg	{name} wasn't removed: Windows didn't allow it, administrator permission is needed.	{name} no se quitó: Windows no lo permitió; hace falta permiso de administrador.
+@msg	{name} wasn't installed: the Windows Installer stopped with error {code}; its log is at {log}	{name} no se instaló: Windows Installer se detuvo con el error {code}; su registro está en {log}
+@msg	{name} wasn't removed: the Windows Installer stopped with error {code}; its log is at {log}	{name} no se quitó: Windows Installer se detuvo con el error {code}; su registro está en {log}
+@msg	{name} wasn't installed: the Windows Installer was interrupted; its log is at {log}	{name} no se instaló: Windows Installer se interrumpió; su registro está en {log}
+@msg	{name} wasn't removed: the Windows Installer was interrupted; its log is at {log}	{name} no se quitó: Windows Installer se interrumpió; su registro está en {log}
+@msg	{name} isn't registered with the Windows Installer	{name} no está registrada en Windows Installer
+@msg	{name} {version} has no Windows Installer package, and the copy installed came from one. Choose a version that has one.	{name} {version} no tiene paquete de Windows Installer, y la copia instalada vino de uno. Elige una versión que lo tenga.
+@msg	{name} {version} is older than the version installed ({installed}), and the Windows Installer doesn't go back: uninstall it first, then install this version.	{name} {version} es anterior a la versión instalada ({installed}), y Windows Installer no vuelve atrás: desinstálala primero y luego instala esta versión.
+@msg	{name} updated to {version}. Its earlier copy in your user folder was removed, with its shortcuts; your settings and data stay.	{name} actualizada a {version}. Se quitó su copia anterior de tu carpeta de usuario, con sus accesos directos; tus ajustes y datos se conservan.
+@msg	{name} installed: {version}. Its earlier copy in your user folder was removed, with its shortcuts; your settings and data stay.	{name} instalada: {version}. Se quitó su copia anterior de tu carpeta de usuario, con sus accesos directos; tus ajustes y datos se conservan.
+@msg	{name} updated to {version}. Its earlier copy in your user folder couldn't be removed; delete it yourself if it is still there.	{name} actualizada a {version}. No se pudo quitar su copia anterior de tu carpeta de usuario; bórrala tú si sigue ahí.
+@msg	{name} installed: {version}. Its earlier copy in your user folder couldn't be removed; delete it yourself if it is still there.	{name} instalada: {version}. No se pudo quitar su copia anterior de tu carpeta de usuario; bórrala tú si sigue ahí.
 @msg	{name} was installed from the {repo} repository or the AUR ({pkg}). Update it with {cmd} or sudo pacman -Syu	{name} se instaló desde el repositorio {repo} o AUR ({pkg}). Actualízala con {cmd} o con sudo pacman -Syu
 @msg	{name} was installed from the {repo} repository or the AUR ({pkg}). Update it with your AUR helper (for example: yay -S {pkg}) or sudo pacman -Syu	{name} se instaló desde el repositorio {repo} o AUR ({pkg}). Actualízala con tu asistente de AUR (por ejemplo: yay -S {pkg}) o con sudo pacman -Syu
 @msg	{name} was installed from the AUR ({pkg}). Update it with {cmd}	{name} se instaló desde AUR ({pkg}). Actualízala con {cmd}

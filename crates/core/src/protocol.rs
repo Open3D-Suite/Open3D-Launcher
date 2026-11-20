@@ -135,6 +135,9 @@ pub enum JobPhase {
     /// Waiting on the OS installer (MSI) or copying files.
     Installing,
     Removing,
+    /// A program's Windows Installer package runs: Windows asks for permission, then it installs
+    /// or removes the program.
+    Permission,
 }
 
 /// A partly downloaded file waiting to be resumed.
@@ -297,6 +300,10 @@ pub struct Capabilities {
     /// instead. A backend may only know this once it has found a newer launcher, so the UI reads
     /// it again on [`Event::LauncherUpdate`].
     pub self_update: bool,
+    /// Programs are installed from their Windows Installer package when the release has one, for
+    /// everyone in `Program Files` (an installed launcher); without it, from their zip (a portable
+    /// launcher, D-153).
+    pub windows_installer: bool,
 }
 
 /// The UI's view of a backend.

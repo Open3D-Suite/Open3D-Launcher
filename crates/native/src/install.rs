@@ -3,7 +3,10 @@
 //!
 //! An Open3D app is a 3ds Max plug-in bundle, unpacked into
 //! `%APPDATA%\Autodesk\ApplicationPlugins\<App>.bundle` ([`crate::max_bundle`]), or a program of
-//! its own, unpacked into `%LOCALAPPDATA%\Programs\Open3D\<App>` ([`crate::standalone`]).
+//! its own: installed for everyone by its Windows Installer package into
+//! `Program Files\Open3D\<App>` when the release has one ([`crate::msi`], D-047), else unpacked
+//! from its zip into `%LOCALAPPDATA%\Programs\Open3D\<App>` ([`crate::standalone`]). A portable
+//! launcher always takes the zip, into its own folder (D-153).
 //!
 //! Every download is checked against its published SHA-256 before anything is unpacked, a bundle
 //! is never changed while 3ds Max runs nor a program while it runs itself, and a new copy is fully
@@ -87,15 +90,34 @@ pub(crate) fn install_at(
     {
         return Err(format!("Cannot update {} to {}: installed version {} is newer", app.name, release.version_label(), inst_v));
     }
+    // A program's package never goes back to an older version (it stops with a message), so a
+    // version chosen by name that is older than the copy it installed is refused before anything
+    // is downloaded.
+    if kind == PackageKind::Msi
+        && let Some(inst) = existing.filter(|inst| inst.source == InstallSource::Msi)
+        && let (Some(rel_v), Some(inst_v)) = (release.version.as_ref(), inst.version.as_ref())
+        && version::is_newer(inst_v, rel_v)
+    {
+        return Err(format!(
+            "{} {} is older than the version installed ({inst_v}), and the Windows Installer doesn't go back: uninstall it first, then install this version.",
+            app.name,
+            release.version_label()
+        ));
+    }
     log::info!("{}: starting {} to {} ({})", app.name, if existing.is_some() { "update" } else { "install" }, release.version_label(), kind.label());
-    let (file, _sha256) = download(release, asset, job)?;
+    let (file, sha256) = download(release, asset, job)?;
     log::info!("{}: download ready ({}), running installer...", app.name, file.display());
-    // Past this point the install can't be interrupted halfway.
-    (job.phase)(JobPhase::Installing);
+    // Past this point the install can't be interrupted halfway. A package says its own phases:
+    // waiting for its turn, then Windows' permission prompt.
+    if kind != PackageKind::Msi {
+        (job.phase)(JobPhase::Installing);
+    }
     let version = release.version_label();
     let result = match kind {
         _ if !app.kinds().contains(&kind) => Err(format!("{} isn't installed from a {}", app.name, kind.label())),
-        PackageKind::Msi | PackageKind::PortableZip => Err(format!("{} isn't installed from a {}", app.name, kind.label())),
+        // Windows Installer keeps its own record of the package: the launcher keeps none.
+        PackageKind::Msi => install_msi(app, &file, &sha256, job).map(|note| (None, note)),
+        PackageKind::PortableZip => Err(format!("{} isn't installed from a {}", app.name, kind.label())),
         PackageKind::MaxBundle => {
             crate::max_bundle::install(app, &file, &version).map(|(record, old)| (Some(record), crate::max_bundle::still_running_note(old)))
         }
@@ -117,19 +139,68 @@ pub(crate) fn install_at(
     result.map_err(|e| if e == CANCELLED { INSTALL_CANCELLED.to_string() } else { e })
 }
 
-/// The copies of a program the launcher looks after: the one in this account's programs folder
-/// (or a portable launcher's).
+/// The copies of a program the launcher looks after: the one its Windows Installer package puts
+/// in `Program Files`, and the one a zip put in this account's programs folder (a portable
+/// launcher's: only its own).
 pub(crate) fn program_exes(app: &SuiteApp) -> Vec<PathBuf> {
-    crate::standalone::exe_path(app).into_iter().collect()
+    let for_everyone = if crate::paths::portable_root().is_none() { crate::msi::suite_folder() } else { None };
+    for_everyone.map(|suite| crate::msi::exe_in(app, &suite)).into_iter().chain(crate::standalone::exe_path(app)).collect()
 }
 
 /// `Ok` unless a copy of the program `app` is open (D-157).
 fn program_closed(app: &SuiteApp) -> Result<(), String> {
+    closed_now(app, &program_exes(app))
+}
+
+/// `Ok` unless one of `exes`, the copies of `app`, runs now.
+fn closed_now(app: &SuiteApp, exes: &[PathBuf]) -> Result<(), String> {
     use crate::running::Processes;
-    if crate::running::is_open(&program_exes(app), &crate::running::SystemProcesses.list()) {
+    if crate::running::is_open(exes, &crate::running::SystemProcesses.list()) {
         return Err(crate::running::open_error(app));
     }
     Ok(())
+}
+
+/// What a finished install or update adds once the program's package has replaced the copy a zip
+/// had put in the user's folder (D-156).
+pub(crate) const OLD_COPY_REMOVED: &str = "Its earlier copy in your user folder was removed, with its shortcuts; your settings and data stay.";
+/// The same, when that copy couldn't be removed.
+pub(crate) const OLD_COPY_KEPT: &str = "Its earlier copy in your user folder couldn't be removed; delete it yourself if it is still there.";
+
+/// Installs or updates the program from its Windows Installer package, for everyone, and once
+/// that has worked removes the copy an earlier zip left in the user's folder (D-156). A package
+/// that fails or is cancelled leaves that copy as it was.
+fn install_msi(app: &SuiteApp, msi: &Path, sha256: &str, job: &mut Job<'_>) -> Result<Note, String> {
+    let exes = program_exes(app);
+    let closed = || closed_now(app, &exes);
+    let log = job.paths.logs().join(format!("{}-install.log", app.id));
+    let run = crate::msi::Run {
+        msiexec: &crate::msi::SystemMsiexec,
+        turns: &crate::msi::INSTALLER,
+        stop: job.stop,
+        phase: &mut *job.phase,
+        log,
+        closed: &closed,
+    };
+    crate::msi::install(app, msi, sha256, run)?;
+    Ok(crate::standalone::Places::system().and_then(|places| remove_old_copy(app, &places)))
+}
+
+/// Removes `app`'s copy in `places`, with its shortcuts, and says so; `None` when there is none.
+/// It is removed the way an uninstall removes it: moved aside first, then deleted as far as nothing
+/// holds it. Its settings and data live elsewhere and stay.
+pub(crate) fn remove_old_copy(app: &SuiteApp, places: &crate::standalone::Places) -> Note {
+    let found = crate::standalone::detect_in(app, places, &|_: &Path| None)?;
+    match crate::standalone::remove(app, Path::new(&found.location), places) {
+        Ok(_) => {
+            log::info!("{}: removed the earlier copy in {}", app.name, found.location);
+            Some(OLD_COPY_REMOVED)
+        }
+        Err(e) => {
+            log::warn!("{}: couldn't remove the earlier copy in {}: {e}", app.name, found.location);
+            Some(OLD_COPY_KEPT)
+        }
+    }
 }
 
 /// Rejects an artifact whose own identity disagrees with the release that authorized it.
@@ -205,25 +276,21 @@ fn destination(
     previous: Option<&Record>,
     locations: &InstallLocations,
 ) -> Result<Option<PathBuf>, String> {
-    if matches!(kind, PackageKind::MaxBundle | PackageKind::AppZip) {
+    // A program's package always installs into `Program Files\Open3D\<App>`: it takes no folder.
+    if matches!(kind, PackageKind::MaxBundle | PackageKind::AppZip | PackageKind::Msi) {
         return Ok(None);
     }
     if kind == PackageKind::PortableZip && previous.is_some_and(|record| record.kind == PackageKind::PortableZip) {
         return Ok(None);
     }
-    if let Some(inst) = existing {
-        let exe = Path::new(&inst.location);
-        return Ok(match kind {
-            PackageKind::Msi => exe.parent().filter(|_| exe.is_absolute()).map(Path::to_path_buf),
-            _ => None,
-        });
+    if existing.is_some() {
+        return Ok(None);
     }
     let Some(folder) = locations.folder(app.id) else { return Ok(None) };
-    if !matches!(kind, PackageKind::Msi | PackageKind::PortableZip) || process::in_sandbox() {
+    if process::in_sandbox() {
         return Err("custom install folders aren't supported on this system".into());
     }
-    let parent = selected_folder(folder, kind != PackageKind::Msi)?;
-    Ok(Some(if kind == PackageKind::Msi { parent.join(app.name) } else { parent }))
+    selected_folder(folder, true).map(Some)
 }
 
 /// The folder a new install goes inside when the person hasn't chosen one, so the UI can show
@@ -243,7 +310,7 @@ pub fn default_folder(kind: PackageKind, arch: Option<Arch>, paths: &Paths) -> O
                 Some(Arch::X86) => {
                     Some(PathBuf::from(std::env::var_os("ProgramFiles(x86)").or_else(|| std::env::var_os("ProgramFiles"))?).join("Open3D"))
                 }
-                Some(_) => Some(PathBuf::from(std::env::var_os("ProgramFiles")?).join("Open3D")),
+                Some(_) => crate::msi::suite_folder(),
                 None => None,
             },
             PackageKind::PortableZip => Some(paths.apps()),
@@ -356,14 +423,21 @@ pub(crate) fn choose_kinds_with(
     let available = available.as_slice();
     if let Some(inst) = existing {
         let kind = match inst.source {
-            InstallSource::Launcher => record.map(|r| r.kind),
+            // A program's zip copy is updated from its package where the release has one, which
+            // then removes that copy (D-156).
+            InstallSource::Launcher => record.map(|r| r.kind).filter(|kind| *kind != PackageKind::AppZip),
             InstallSource::Bundle => Some(PackageKind::MaxBundle),
-            InstallSource::AppFolder => Some(PackageKind::AppZip),
+            InstallSource::AppFolder => None,
+            // Never two copies: a copy its package installed is updated only by a package, and a
+            // release without one has nothing to install over it.
+            InstallSource::Msi => return available.iter().copied().filter(|kind| *kind == PackageKind::Msi).collect(),
         };
         if let Some(k) = kind.filter(|k| available.contains(k)) {
             return vec![k];
         }
     }
+    // A program takes its package first, whatever an old setting prefers.
+    let preferred = if app.is_standalone() { &[][..] } else { preferred };
     let mut kinds: Vec<PackageKind> = preferred.iter().copied().filter(|k| available.contains(k)).collect();
     for k in available {
         if !kinds.contains(k) {
@@ -375,10 +449,13 @@ pub(crate) fn choose_kinds_with(
 
 /// Package formats this machine can install, best first.
 pub(crate) fn available_kinds() -> Vec<PackageKind> {
-    #[cfg(windows)]
-    return vec![PackageKind::MaxBundle, PackageKind::AppZip];
-    #[allow(unreachable_code)]
-    Vec::new()
+    available_kinds_for(crate::paths::portable_root().is_some())
+}
+
+/// [`available_kinds`] for a portable launcher or an installed one: a portable launcher installs
+/// programs from their zips, inside its own folder, and never asks for permission (D-153).
+pub(crate) fn available_kinds_for(portable: bool) -> Vec<PackageKind> {
+    if portable { vec![PackageKind::MaxBundle, PackageKind::AppZip] } else { vec![PackageKind::MaxBundle, PackageKind::Msi, PackageKind::AppZip] }
 }
 
 /// Fetches `asset` into the download folder, checked against its published SHA-256: the feed's
@@ -430,13 +507,20 @@ pub(crate) fn uninstall(
     stop: &Stop,
     phase: &mut dyn FnMut(JobPhase),
 ) -> Result<Note, String> {
-    let _ = (record, stop, &phase, paths);
     let path = PathBuf::from(&installed.location);
     // A standalone app is found by its own program, whoever installed it, and is never removed
     // while it is open (D-157).
     let remove_program = || crate::standalone::uninstall(app, &path).map(crate::standalone::still_running_note);
     if app.is_standalone() {
         program_closed(app)?;
+        if installed.source == InstallSource::Msi {
+            // Its package removes it, for everyone; Windows asks for permission.
+            let exes = program_exes(app);
+            let closed = || closed_now(app, &exes);
+            let log = paths.logs().join(format!("{}-uninstall.log", app.id));
+            let run = crate::msi::Run { msiexec: &crate::msi::SystemMsiexec, turns: &crate::msi::INSTALLER, stop, phase, log, closed: &closed };
+            return crate::msi::uninstall(app, &crate::msi::WindowsRegistry, run).map(|()| None);
+        }
         return remove_program();
     }
     if matches!(installed.source, InstallSource::Launcher) && process::is_running(&path) {
@@ -539,16 +623,101 @@ mod tests {
     #[test]
     fn each_app_is_installed_only_from_its_own_kind_of_package() {
         let plugin = *SuiteApp::by_id("opentools").expect("OpenTools is in the catalog");
-        let system = SystemKinds { available: available_kinds(), can_pacman: false };
-        assert_eq!(system.available, [PackageKind::MaxBundle, PackageKind::AppZip]);
+        let system = SystemKinds { available: available_kinds_for(false), can_pacman: false };
+        assert_eq!(available_kinds(), system.available, "the tests run an installed launcher");
+        assert_eq!(system.available, [PackageKind::MaxBundle, PackageKind::Msi, PackageKind::AppZip]);
         assert_eq!(choose_kinds_on(&plugin, None, None, &[], &system), [PackageKind::MaxBundle]);
-        assert_eq!(choose_kinds_on(&program(), None, None, &[], &system), [PackageKind::AppZip]);
+        // A program: its package where the release has one, else its zip (D-047).
+        let both = [PackageKind::Msi, PackageKind::AppZip];
+        assert_eq!(choose_kinds_on(&program(), None, None, &[], &system), both);
         // A saved preference for another format changes nothing.
         assert_eq!(choose_kinds_on(&plugin, None, None, &[PackageKind::AppZip], &system), [PackageKind::MaxBundle]);
-        assert_eq!(choose_kinds_on(&program(), None, None, &[PackageKind::MaxBundle, PackageKind::Msi], &system), [PackageKind::AppZip]);
-        // A copy found in its folder, put there by hand or by the launcher, is updated the same way.
-        assert_eq!(choose_kinds_on(&program(), Some(&found(InstallSource::AppFolder)), None, &[], &system), [PackageKind::AppZip]);
+        assert_eq!(choose_kinds_on(&program(), None, None, &[PackageKind::AppZip, PackageKind::MaxBundle], &system), both);
+        // A copy a zip put in the user's folder, by hand or by the launcher, moves to the package
+        // when the release has one (D-156).
+        assert_eq!(choose_kinds_on(&program(), Some(&found(InstallSource::AppFolder)), None, &[], &system), both);
+        let zip_record = Record {
+            version: "0.1.0".into(),
+            kind: PackageKind::AppZip,
+            path: PathBuf::new(),
+            installed_at: 0,
+            files: Vec::new(),
+            needs_root: false,
+        };
+        assert_eq!(choose_kinds_on(&program(), Some(&found(InstallSource::Launcher)), Some(&zip_record), &[], &system), both);
         assert_eq!(choose_kinds_on(&plugin, Some(&found(InstallSource::Bundle)), None, &[], &system), [PackageKind::MaxBundle]);
+        // Never two copies: what its package installed is updated by a package or not at all.
+        assert_eq!(choose_kinds_on(&program(), Some(&found(InstallSource::Msi)), None, &[], &system), [PackageKind::Msi]);
+    }
+
+    /// A portable launcher installs programs from their zips only (D-153).
+    #[test]
+    fn a_portable_launcher_installs_programs_from_their_zips() {
+        let system = SystemKinds { available: available_kinds_for(true), can_pacman: false };
+        assert_eq!(system.available, [PackageKind::MaxBundle, PackageKind::AppZip]);
+        assert_eq!(choose_kinds_on(&program(), None, None, &[], &system), [PackageKind::AppZip]);
+        assert_eq!(choose_kinds_on(&program(), Some(&found(InstallSource::AppFolder)), None, &[PackageKind::Msi], &system), [PackageKind::AppZip]);
+        assert!(choose_kinds_on(&program(), Some(&found(InstallSource::Msi)), None, &[], &system).is_empty());
+    }
+
+    /// The package the backend picks from a release: the MSI when the release has one, else the zip;
+    /// for a copy its package installed, nothing from a release without one.
+    #[test]
+    fn a_release_gives_its_package_then_its_zip() {
+        let platform = open3d_launcher_core::Platform { os: open3d_launcher_core::Os::Windows, arch: Arch::X64 };
+        let release = |names: &[&str]| Release {
+            assets: names.iter().map(|n| Asset { name: (*n).into(), ..Asset::default() }).collect(),
+            ..Release::default()
+        };
+        let both = release(&["phototool-0.5.0-windows-x64.zip", "phototool-0.5.0-windows-x64.msi"]);
+        let zip_only = release(&["phototool-0.5.0-windows-x64.zip"]);
+        let system = SystemKinds { available: available_kinds_for(false), can_pacman: false };
+        let picked = |release: &Release, existing: Option<&Installed>| {
+            let kinds = choose_kinds_on(&program(), existing, None, &[], &system);
+            open3d_launcher_core::platform::pick_asset(release, &["phototool"], platform, &kinds).map(|(asset, kind)| (asset.name.clone(), kind))
+        };
+        assert_eq!(picked(&both, None), Some(("phototool-0.5.0-windows-x64.msi".into(), PackageKind::Msi)));
+        assert_eq!(picked(&zip_only, None), Some(("phototool-0.5.0-windows-x64.zip".into(), PackageKind::AppZip)));
+        assert_eq!(picked(&both, Some(&found(InstallSource::AppFolder))).map(|(_, kind)| kind), Some(PackageKind::Msi));
+        assert_eq!(picked(&zip_only, Some(&found(InstallSource::Msi))), None);
+    }
+
+    /// D-156: once the package has installed, the zip's copy in the user's folder goes with its
+    /// shortcuts, and nothing else does.
+    #[test]
+    fn the_old_copy_goes_with_its_shortcuts_and_nothing_else() {
+        let tmp = tempfile::tempdir().unwrap();
+        let places = crate::standalone::Places::under(&tmp.path().join("home"));
+        assert_eq!(remove_old_copy(&program(), &places), None, "no copy, nothing to say");
+        // The zip's copy, its shortcuts, and beside them another program and the settings and data.
+        let dir = places.apps.join("PhotoTool");
+        std::fs::create_dir_all(dir.join("docs")).unwrap();
+        std::fs::write(dir.join("PhotoTool.exe"), b"0.4.0").unwrap();
+        std::fs::write(dir.join("docs").join("notes.txt"), b"notes").unwrap();
+        let other = places.apps.join("FilmTool");
+        std::fs::create_dir_all(&other).unwrap();
+        let settings = tmp.path().join("home").join("Roaming").join("Open3D").join("PhotoTool");
+        let data = tmp.path().join("home").join("Local").join("Open3D").join("PhotoTool");
+        for folder in [&settings, &data] {
+            std::fs::create_dir_all(folder).unwrap();
+            std::fs::write(folder.join("settings.json"), b"{}").unwrap();
+        }
+        for folder in &places.shortcuts {
+            std::fs::create_dir_all(folder).unwrap();
+        }
+        let link = places.shortcuts[0].join("PhotoTool.lnk");
+        crate::standalone::testing::shortcut(&link, &dir.join("PhotoTool.exe"));
+        // Held as a running program holds its exe: it stays, and the person is told.
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            let _held = std::fs::OpenOptions::new().read(true).share_mode(1).open(dir.join("PhotoTool.exe")).unwrap();
+            assert_eq!(remove_old_copy(&program(), &places), Some(OLD_COPY_KEPT));
+            assert!(dir.join("PhotoTool.exe").is_file() && link.is_file());
+        }
+        assert_eq!(remove_old_copy(&program(), &places), Some(OLD_COPY_REMOVED));
+        assert!(!dir.exists() && !link.exists());
+        assert!(other.is_dir() && settings.join("settings.json").is_file() && data.join("settings.json").is_file());
+        assert_eq!(remove_old_copy(&program(), &places), None, "it is gone");
     }
 
     #[test]

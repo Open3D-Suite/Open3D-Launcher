@@ -199,6 +199,10 @@ impl LauncherUi {
         Self::title(ui, crate::icons::app(id), &fmt(tl!("Uninstall {name}?"), &[("name", entry.app.name)]), "");
         let how = tl!("The app will be removed. Your documents and settings stay.");
         ui.label(RichText::new(how).color(t.muted));
+        // A program its package installed for everyone: Windows' own prompt comes first.
+        if entry.installed.as_ref().is_some_and(|installed| installed.source == open3d_launcher_core::InstallSource::Msi) {
+            ui.label(RichText::new(tl!("Windows will ask for permission to remove it.")).color(t.muted));
+        }
         ui.add_space(20.0);
         let mut close = false;
         // A row: a right-to-left layout straight in the column would fill the height left.

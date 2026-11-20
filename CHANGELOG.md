@@ -21,6 +21,15 @@ What each version of the Open3D Launcher adds, newest first.
 - **A portable launcher keeps the files of the programs it opens in its own folder too:** their settings
   in `Open3DLauncherData` and the rest in `Open3DLauncherData\Local` (OpenRef for now, the others as they
   are updated).
+- **Programs install for everyone on the computer, with their Windows Installer package.** When a release
+  of OpenView, OpenRef, OpenFarm or OpenGaussian publishes its `.msi`, the launcher installs, updates and
+  removes the program with it, in `C:\Program Files\Open3D\<App>`, and Windows asks for permission each
+  time. Update all runs them one after another, each with its own prompt; the card says when Windows will
+  ask. A cancelled prompt keeps the download for the next try, and an error names the installer's log in
+  the launcher's `logs` folder. Releases without a package install from their zip, as before.
+- **Once a program's package has installed, its earlier copy in your user folder goes,** with its
+  shortcuts, and the launcher says so. Its settings and data stay where they are. If the package fails or
+  you cancel it, the earlier copy stays and keeps working.
 - **A portable launcher installs the programs inside its own folder,** in `Open3DLauncherData\Programs`,
   and adds no shortcut to the Start menu or the desktop, so it writes nothing outside its folder. Programs
   it installed in your user folder before stay there and keep working; it no longer lists them.

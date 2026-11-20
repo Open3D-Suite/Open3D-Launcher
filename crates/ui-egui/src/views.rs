@@ -252,7 +252,7 @@ impl LauncherUi {
                     JobPhase::Downloading { .. } | JobPhase::Reconnecting { .. } => (None, tl!("Downloading…").to_string()),
                     JobPhase::Verifying => (None, tl!("Verifying…").to_string()),
                     JobPhase::Waiting => (None, tl!("Waiting for other installs…").to_string()),
-                    JobPhase::Installing | JobPhase::Removing => (None, tl!("Installing, then restarting…").to_string()),
+                    JobPhase::Installing | JobPhase::Removing | JobPhase::Permission => (None, tl!("Installing, then restarting…").to_string()),
                 };
                 // Another app's install can hang on a Windows permission prompt: the wait can be called off.
                 if phase == JobPhase::Waiting
@@ -1161,6 +1161,8 @@ impl LauncherUi {
             JobPhase::Waiting => (None, tl!("Waiting for another app…").into(), rgb(entry.app.color)),
             JobPhase::Installing => (None, tl!("Installing…").into(), rgb(entry.app.color)),
             JobPhase::Removing => (None, tl!("Removing…").into(), rgb(entry.app.color)),
+            // The package runs: Windows' own prompt comes first, then its progress window.
+            JobPhase::Permission => (None, tl!("Windows will ask for permission…").into(), rgb(entry.app.color)),
         };
         let downloading = matches!(phase, JobPhase::Downloading { .. } | JobPhase::Reconnecting { .. });
         // A job waiting for the installer hasn't started it yet, so it can still be called off.

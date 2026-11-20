@@ -238,6 +238,25 @@ fn spanish_translates_the_note_about_processes_still_running() {
     assert_eq!(message(Lang::ES, &format!("OpenView was removed. {note}")), format!("Se quitó OpenView. {nota}"));
 }
 
+/// What a program's Windows Installer package says when it ends (the backend's `msi::explain`) and
+/// what an install adds once it has removed the zip's copy (`install::OLD_COPY_REMOVED`).
+#[test]
+fn spanish_translates_the_windows_installer_messages() {
+    assert_eq!(
+        message(Lang::ES, r"OpenRef wasn't installed: the Windows Installer stopped with error 1603; its log is at C:\Logs\openref-install.log"),
+        r"OpenRef no se instaló: Windows Installer se detuvo con el error 1603; su registro está en C:\Logs\openref-install.log"
+    );
+    assert_eq!(
+        message(Lang::ES, "OpenRef wasn't removed: another installation is in progress. Wait for it to finish, then try again."),
+        "OpenRef no se quitó: hay otra instalación en curso. Espera a que termine y vuelve a intentarlo."
+    );
+    let note = "Its earlier copy in your user folder was removed, with its shortcuts; your settings and data stay.";
+    let nota = "Se quitó su copia anterior de tu carpeta de usuario, con sus accesos directos; tus ajustes y datos se conservan.";
+    assert_eq!(message(Lang::ES, &format!("OpenRef updated to 0.2.0. {note}")), format!("OpenRef actualizada a 0.2.0. {nota}"));
+    assert_eq!(message(Lang::ES, &format!("OpenRef installed: 0.2.0. {note}")), format!("OpenRef instalada: 0.2.0. {nota}"));
+    assert_eq!(message(Lang::ES, "OpenFarm is open; close it and try again."), "OpenFarm está abierta; ciérrala y vuelve a intentarlo.");
+}
+
 // The parser.
 
 #[test]

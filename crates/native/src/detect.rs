@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Finding Open3D apps that are already installed: the launcher's own record of what it installed,
-//! else a 3ds Max bundle in `ApplicationPlugins` or a standalone app in its folder under
-//! `Programs\Open3D`, whoever put it there.
+//! Finding Open3D apps that are already installed: a program's Windows Installer package, by its
+//! Uninstall key; else the launcher's own record of what it installed, else a 3ds Max bundle in
+//! `ApplicationPlugins` or a standalone app in its folder under `Programs\Open3D`, whoever put it
+//! there.
 
 use open3d_launcher_core::{InstallSource, Installed, SuiteApp, version};
 
@@ -9,6 +10,15 @@ use crate::manifest::Manifest;
 
 /// What's installed of `app`, best source first.
 pub fn detect(app: &SuiteApp, manifest: &Manifest) -> Option<Installed> {
+    // The copy its package installed for everyone comes first: one a zip left in the user's folder
+    // goes once that package has installed well (D-156). A portable launcher only looks in its own
+    // folder (D-153).
+    if app.is_standalone()
+        && crate::paths::portable_root().is_none()
+        && let Some(found) = crate::msi::detect(app)
+    {
+        return Some(found);
+    }
     if let Some(found) = from_manifest(app, manifest) {
         return Some(found);
     }

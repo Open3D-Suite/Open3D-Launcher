@@ -12,20 +12,19 @@ as a change that makes it old.
 - `crates/core/`: data and logic, with no input or output. `catalog.toml` is the built-in list of apps;
   `hosted_catalog.rs` checks the signed one; `platform.rs` reads the names of the packages.
 - `crates/native/`: the backend. `source.rs` asks GitHub for the releases, `http.rs` downloads, `install.rs`
-  installs through `max_bundle.rs` (3ds Max bundles) and `standalone.rs` (programs).
+  installs through `max_bundle.rs` (3ds Max bundles), `msi.rs` and `standalone.rs` (programs).
 - `xtask/`: `cargo xtask`. `packaging/windows/`: the launcher's own packages. `tools/publish.py`: publishing.
 
 ## Build and check
 
-- Build: `cargo build --release -p open3d-launcher`. `.cargo/config.toml` links the Visual C++ runtime into
-  the exe (`+crt-static`), so it needs no `VCRUNTIME140.dll`; an ignored `.cargo/config.local.toml` is read if present.
+- Build: `cargo build --release -p open3d-launcher`. `.cargo/config.toml` links the Visual C++ runtime in
+  (`+crt-static`: no `VCRUNTIME140.dll`); an ignored `.cargo/config.local.toml` is read if present.
 - Checks: `tools\check.ps1` runs them all, and all must pass. It needs Python 3.11 or newer and the ruff
   that `ruff.toml` names. First what `tools/repo.py` has built in: the version agrees in its three places,
   every source has its licence line, the common lints, no path of somebody's computer (`tools/repo.toml`
   allows the made-up users of the tests). Then the commands that `tools/repo.toml` lists:
   - `cargo fmt --all --check`, then `ruff format --check .` and `ruff check .` (`tools/`, `dev/make_icon.py`)
-  - `python -I -m unittest discover -s tools`: `tools/test_publish.py`, which runs no command (no network,
-    no git, no gh)
+  - `python -I -m unittest discover -s tools`: `tools/test_publish.py`, which runs no command
   - `cargo clippy --workspace --all-targets --locked -- -D warnings`
   - `cargo test --workspace --locked` (4 tests are ignored: 2 need the network, 2 are started by another)
   - only with `tools\check.ps1 -Full`: the ignored test of the live signed catalog. The other network test
@@ -65,14 +64,15 @@ as a change that makes it old.
 
 ## Rules of this code
 
-- Apps are installed from zips, per user, with no administrator rights: a 3ds Max app's `<App>.bundle`
-  into `%APPDATA%\Autodesk\ApplicationPlugins`, a program into `%LOCALAPPDATA%\Programs\Open3D\<App>`
-  (a portable launcher's into `Open3DLauncherData\Programs\<App>`, with no shortcut).
-- The zip is `<id>-<ver>-windows-x64-3dsmax.zip` with the bundle at its root, or `<id>-<ver>-windows-x64.zip`
-  with `<App>.exe` at its root or where the catalog's `exe` says. `AppVersion` in `PackageContents.xml`, or
-  the exe's file version, must be the release's, and a download with no published SHA-256 is refused.
-- No plug-in is changed while a `3dsmax.exe` runs, batch and farm renders included; no program while its
-  own exe runs. The old copy waits in `.open3d-<id>` beside it until the new one is in place.
+- A 3ds Max app's `<App>.bundle` comes from `<id>-<ver>-windows-x64-3dsmax.zip` into
+  `%APPDATA%\Autodesk\ApplicationPlugins`. A program comes from its per-machine `<id>-<ver>-windows-x64.msi`
+  when the release has one (`msi.rs`: one `msiexec` at a time, started normally so Windows asks; found by
+  its Uninstall key, in `Program Files\Open3D\<App>`; then the zip's copy goes), else from its zip (`<App>.exe`
+  at its root or where the catalog's `exe` says) into `%LOCALAPPDATA%\Programs\Open3D\<App>`; a portable
+  launcher always from the zip, into its `Open3DLauncherData\Programs\<App>`, with no shortcut. The bundle's
+  `AppVersion` or the exe's file version must be the release's; no published SHA-256, no install.
+- No plug-in is changed while a `3dsmax.exe` runs, batch and farm renders included, no program while a
+  copy of it runs (`running.rs`). The old copy waits in `.open3d-<id>` until the new one is in place.
 - The hosted catalog counts only if its signature matches the built-in public key; the private key is not
   in the repo. It can add apps, but not change the name, repo, package or exe of a built-in one.
 - Interface texts are English in the code (`t`, `tl!`, `tn`), with their Spanish in `es.tsv`. The test for
@@ -92,9 +92,8 @@ as a change that makes it old.
   `Open3DLauncherData`, which it gives as `OPEN3D_SETTINGS_DIR`, with its `Local` as `OPEN3D_DATA_DIR`, to
   the programs it opens (`paths::portable_variables`). At start `Settings::take_shared_language` puts its
   preference in `Settings.language`, or with none carries the launcher's own `en` or `es` over once
-  (`language_shared`), or leaves `auto`. `auto` is the language of
-  Windows: Spanish if it is Spanish, else English; `OPEN3D_LAUNCHER_LOCALE` overrides it. The language
-  picker writes the file (`LauncherUi::choose_language`; `auto` removes the key).
+  (`language_shared`), or leaves `auto`. `auto` is the language of Windows: Spanish if it is Spanish, else
+  English; `OPEN3D_LAUNCHER_LOCALE` overrides it. The picker writes the file (`LauncherUi::choose_language`).
 - `unsafe` is forbidden in the workspace but for `crates/ui-egui`, where it is denied and allowed by name
   only in `open3d_settings.rs`, to ask Windows for its language. Outside tests every crate denies `unwrap`,
   `expect` and `panic`.
@@ -109,6 +108,6 @@ as a change that makes it old.
 - Adding an app: its entry in `crates/core/catalog.toml`, `assets/app-icons/<id>.png` and its line in
   `catalog::app_icon_png`, its `es.tsv` rows, and the catalog signed again. `publish.py catalog` does not
   update the copy in `crates/core/tests/fixtures/`, which a test checks.
-- Only debug builds obey `OPEN3D_LAUNCHER_IGNORE_MAX`, `OPEN3D_LAUNCHER_APPS_ROOT` and
-  `OPEN3D_LAUNCHER_TEST_OLD_FOLDERS`; only `local-mirror` builds obey `OPEN3D_LAUNCHER_DOWNLOAD_BASE`.
-  Comments name a `cargo xtask local serve` that does not exist.
+- Only debug builds obey `OPEN3D_LAUNCHER_IGNORE_MAX`, `OPEN3D_LAUNCHER_APPS_ROOT`,
+  `OPEN3D_LAUNCHER_TEST_MSIEXEC` and `OPEN3D_LAUNCHER_TEST_OLD_FOLDERS`; only `local-mirror` builds obey
+  `OPEN3D_LAUNCHER_DOWNLOAD_BASE`. Comments name a `cargo xtask local serve` that does not exist.

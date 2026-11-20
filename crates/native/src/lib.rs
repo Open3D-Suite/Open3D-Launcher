@@ -17,6 +17,7 @@ pub mod install;
 pub mod login;
 mod manifest;
 mod max_bundle;
+mod msi;
 #[cfg(any(windows, test))]
 mod msi_context;
 pub mod paths;
