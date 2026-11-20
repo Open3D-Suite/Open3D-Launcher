@@ -21,6 +21,8 @@ struct App {
     former_names: Vec<String>,
     kind: String,
     publisher: String,
+    /// The publisher its Windows Installer package names, under the key the catalogs use.
+    #[serde(rename = "windows_msi_publisher")]
     msi_publisher: Option<String>,
     bundle: Option<String>,
     former_bundles: Vec<String>,

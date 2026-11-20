@@ -67,6 +67,8 @@ struct Record {
     former_bundles: Vec<String>,
     kind: String,
     publisher: String,
+    /// The publisher the app's Windows Installer package names, under the key the catalogs use.
+    #[serde(rename = "windows_msi_publisher")]
     msi_publisher: Option<String>,
     bundle: Option<String>,
     site: Option<String>,
@@ -318,7 +320,7 @@ fn valid_record(r: &Record) -> bool {
     } else if r.kind != "official"
         || !r.repo.eq_ignore_ascii_case(&format!("{}/{}", crate::catalog::GITHUB_OWNER, r.id))
         || r.publisher != "Open3D"
-        || r.msi_publisher.is_some()
+        || r.msi_publisher.as_deref().is_some_and(|publisher| publisher != "Open3D")
         || r.bundle.is_some()
         || r.mac_team.is_some()
         || !r.former_ids.is_empty()
@@ -482,6 +484,24 @@ mod tests {
         r = first_record();
         r.package = Some("3dsmax".into());
         assert!(valid_record(&r));
+    }
+
+    /// The catalogs name the publisher of each app's Windows Installer package as
+    /// `windows_msi_publisher`; it was read under another key, and so was never found.
+    #[test]
+    fn the_publisher_of_the_windows_installer_packages_is_read_from_the_catalogs() {
+        assert!(SUITE.iter().all(|app| app.msi_publisher == Some("Open3D")), "the built-in catalog");
+        let catalog = VerifiedCatalog::verify(WEBSITE, SIGNATURE).unwrap();
+        assert_eq!(catalog.rejected_entries, 0);
+        assert!(catalog.records.iter().all(|r| r.msi_publisher.as_deref() == Some("Open3D")), "the signed catalog");
+        // A new app's package is Open3D's, as its publisher is.
+        let mut r = future_app();
+        r.msi_publisher = Some("Open3D".into());
+        assert!(valid_record(&r));
+        r.msi_publisher = None;
+        assert!(valid_record(&r));
+        r.msi_publisher = Some("Someone else".into());
+        assert!(!valid_record(&r));
     }
 
     #[test]

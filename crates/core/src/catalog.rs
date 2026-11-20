@@ -68,7 +68,8 @@ pub struct SuiteApp {
     pub kind: AppKind,
     /// Who publishes it, as the card's byline shows it (`Open3D`, `Tangency Labs`).
     pub publisher: &'static str,
-    /// The publisher its Windows installer names, when it isn't Open3D's (`Open3D`).
+    /// The publisher its Windows Installer package names (`windows_msi_publisher` in the catalog):
+    /// `Open3D` for every app of the suite. `None` reads as `Open3D`.
     pub msi_publisher: Option<&'static str>,
     /// The bundle id when it isn't `io.github.carlesllavata.<id>` (a community app brings its own).
     pub bundle: Option<&'static str>,
