@@ -9,7 +9,7 @@
 //! Open3D's own code, not part of ArtCraft Launcher.
 
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::paths::{SHARED_DATA_VARIABLE, SHARED_SETTINGS_VARIABLE};
 
@@ -50,9 +50,110 @@ pub(crate) fn folders_from(
     Folders { settings: settings.map(|dir| dir.join(name)), data: data.map(|dir| dir.join(name)) }
 }
 
+/// Deletes a program's settings and data folders, when the person asked for that on uninstalling
+/// it (D-045), and nothing else: not the shared `settings.json` beside them, not the folders the
+/// program used before the Open3D ones. A folder that is a link is unlinked, never followed.
+/// `Err` names what is left; whatever could be deleted is gone.
+pub(crate) fn delete(folders: &Folders) -> Result<(), String> {
+    let mut left = Vec::new();
+    for folder in [&folders.settings, &folders.data].into_iter().flatten() {
+        match delete_folder(folder) {
+            Ok(true) => log::info!("deleted {}", folder.display()),
+            Ok(false) => {}
+            Err(e) => left.push(format!("{} ({e})", folder.display())),
+        }
+    }
+    if left.is_empty() { Ok(()) } else { Err(left.join("; ")) }
+}
+
+/// Deletes `folder` and what is in it; `Ok(false)` when there is no folder of that name.
+fn delete_folder(folder: &Path) -> std::io::Result<bool> {
+    use std::os::windows::fs::MetadataExt;
+    /// A junction or a symbolic link.
+    const REPARSE_POINT: u32 = 0x400;
+    let meta = match std::fs::symlink_metadata(folder) {
+        Ok(meta) => meta,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(e) => return Err(e),
+    };
+    if meta.file_attributes() & REPARSE_POINT != 0 {
+        std::fs::remove_dir(folder).or_else(|_| std::fs::remove_file(folder))?;
+        return Ok(true);
+    }
+    // Something else of that name isn't the program's folder.
+    if !meta.is_dir() {
+        return Ok(false);
+    }
+    std::fs::remove_dir_all(folder)?;
+    Ok(true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A program's two folders, the shared `settings.json` and another program's folders beside
+    /// them, under `root`.
+    fn suite(root: &Path) -> Folders {
+        let (settings, data) = (root.join("Roaming").join("Open3D"), root.join("Local").join("Open3D"));
+        for (top, file) in [(&settings, "config.json"), (&data, "farm.sqlite")] {
+            std::fs::create_dir_all(top.join("OpenFarm").join("deep")).unwrap();
+            std::fs::write(top.join("OpenFarm").join(file), b"mine").unwrap();
+            std::fs::write(top.join("OpenFarm").join("deep").join("more.txt"), b"mine").unwrap();
+            std::fs::create_dir_all(top.join("OpenRef")).unwrap();
+            std::fs::write(top.join("OpenRef").join("settings.json"), b"another program's").unwrap();
+        }
+        std::fs::write(settings.join("settings.json"), br#"{"language":"es"}"#).unwrap();
+        folders_from("OpenFarm", None, Some(root.join("Roaming").into()), None, Some(root.join("Local").into()))
+    }
+
+    #[test]
+    fn deleting_a_programs_files_takes_its_two_folders_and_nothing_else() {
+        let tmp = tempfile::tempdir().unwrap();
+        let folders = suite(tmp.path());
+        // The folder it used before the Open3D folders stays too.
+        let old = tmp.path().join("Local").join("OpenFarm");
+        std::fs::create_dir_all(&old).unwrap();
+        assert_eq!(delete(&folders), Ok(()));
+        let (settings, data) = (folders.settings.clone().unwrap(), folders.data.clone().unwrap());
+        assert!(!settings.exists() && !data.exists());
+        assert!(settings.parent().unwrap().join("settings.json").is_file(), "the language every app shares");
+        assert!(settings.parent().unwrap().join("OpenRef").join("settings.json").is_file());
+        assert!(data.parent().unwrap().join("OpenRef").join("settings.json").is_file());
+        assert!(old.is_dir());
+        // Nothing left to delete is no error.
+        assert_eq!(delete(&folders), Ok(()));
+    }
+
+    #[test]
+    fn a_folder_that_is_a_link_is_unlinked_and_what_it_points_at_stays() {
+        let tmp = tempfile::tempdir().unwrap();
+        let folders = suite(tmp.path());
+        let data = folders.data.clone().unwrap();
+        let elsewhere = tmp.path().join("Elsewhere");
+        std::fs::rename(&data, &elsewhere).unwrap();
+        // A junction needs no administrator rights.
+        let made = std::process::Command::new("cmd").args(["/C", "mklink", "/J"]).arg(&data).arg(&elsewhere).output().unwrap();
+        assert!(made.status.success(), "{}", String::from_utf8_lossy(&made.stdout));
+        assert_eq!(delete(&folders), Ok(()));
+        assert!(std::fs::symlink_metadata(&data).is_err(), "the link is gone");
+        assert!(elsewhere.join("farm.sqlite").is_file(), "what it pointed at stays");
+    }
+
+    #[test]
+    fn what_cannot_be_deleted_is_named() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let folders = suite(tmp.path());
+        let settings = folders.settings.clone().unwrap();
+        // Held open without sharing deletion, as a program that still writes it would.
+        let held = std::fs::OpenOptions::new().read(true).share_mode(1).open(settings.join("config.json")).unwrap();
+        let left = delete(&folders).unwrap_err();
+        assert!(left.contains(&settings.display().to_string()), "{left}");
+        assert!(!folders.data.as_ref().unwrap().exists(), "the other folder still goes");
+        drop(held);
+        assert_eq!(delete(&folders), Ok(()));
+    }
 
     fn os(text: &str) -> Option<OsString> {
         Some(OsString::from(text))

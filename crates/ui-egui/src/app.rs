@@ -111,7 +111,11 @@ pub(crate) enum UiAction {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Dialog {
     Notes(String),
-    ConfirmUninstall(String),
+    /// Uninstalling `app`; `delete_data` is its check box, unticked at first (D-045).
+    ConfirmUninstall {
+        app: String,
+        delete_data: bool,
+    },
     Replace {
         app: String,
         path: String,
@@ -129,7 +133,7 @@ impl Dialog {
     pub(crate) fn key(&self) -> (&'static str, &str) {
         match self {
             Dialog::Notes(id) => ("notes", id),
-            Dialog::ConfirmUninstall(id) => ("uninstall", id),
+            Dialog::ConfirmUninstall { app, .. } => ("uninstall", app),
             Dialog::Replace { app, .. } => ("replace", app),
             Dialog::CloseApp(id) => ("close-app", id),
             Dialog::Settings => ("settings", ""),

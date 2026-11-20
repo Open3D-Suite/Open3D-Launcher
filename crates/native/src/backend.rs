@@ -422,7 +422,8 @@ impl NativeBackend {
     /// Starts the job, or returns `false` without starting one: the app is unknown, doesn't run
     /// on this platform, is already running a job, or the launcher is restarting into an update.
     fn start_job(&self, app_id: &str, work: Work) -> bool {
-        let uninstall = matches!(work, Work::Uninstall);
+        let uninstall = matches!(work, Work::Uninstall { .. });
+        let delete_data = matches!(work, Work::Uninstall { delete_data: true });
         let Some(app) = SuiteApp::by_id(app_id) else { return false };
         log::info!("{}: starting {} job", app.name, if uninstall { "uninstall" } else { "install/update" });
         let stop = Arc::new(Stop::default());
@@ -457,7 +458,7 @@ impl NativeBackend {
                 shared.emit(Event::Progress { app: app.id.to_string(), phase: JobPhase::Removing });
                 let mut phase = |phase| shared.emit(Event::Progress { app: app.id.to_string(), phase });
                 match &existing {
-                    Some(inst) => install::uninstall(app, inst, record.as_ref(), &paths, &stop, &mut phase).map(|note| {
+                    Some(inst) => install::uninstall(app, inst, record.as_ref(), &paths, (&stop, &mut phase), delete_data).map(|note| {
                         let mut m = shared.manifest.lock().unwrap_or_else(PoisonError::into_inner);
                         if m.apps.remove(app.id).is_some() {
                             let _ = m.save(&paths.manifest());
@@ -469,7 +470,7 @@ impl NativeBackend {
             } else {
                 let approved = match &work {
                     Work::Replace(path) => Some(path.as_str()),
-                    Work::Install | Work::CloseAndInstall | Work::Uninstall => None,
+                    Work::Install | Work::CloseAndInstall | Work::Uninstall { .. } => None,
                 };
                 let close = work == Work::CloseAndInstall;
                 let r = run_install(
@@ -577,7 +578,8 @@ enum Work {
     CloseAndInstall,
     /// Install over the path the user agreed to overwrite (see [`Command::Replace`]).
     Replace(String),
-    Uninstall,
+    /// Remove; with `delete_data`, a program's settings and data too (D-045).
+    Uninstall { delete_data: bool },
 }
 
 fn release_matches_track(release: &Release, track: &VersionTrack, prereleases: bool) -> bool {
@@ -1346,8 +1348,8 @@ impl Backend for NativeBackend {
             Command::Replace { app, path } => {
                 self.start_job(&app, Work::Replace(path));
             }
-            Command::Uninstall { app } => {
-                self.start_job(&app, Work::Uninstall);
+            Command::Uninstall { app, delete_data } => {
+                self.start_job(&app, Work::Uninstall { delete_data });
             }
             Command::CloseAndInstall { app } => {
                 self.start_job(&app, Work::CloseAndInstall);

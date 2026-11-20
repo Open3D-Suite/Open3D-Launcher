@@ -1402,7 +1402,7 @@ impl LauncherUi {
         }
         ui.separator();
         if ui.button(RichText::new(tl!("Uninstall…")).color(Tokens::get(ui.ctx()).bad)).clicked() {
-            self.dialog = Some(Dialog::ConfirmUninstall(id.to_string()));
+            self.dialog = Some(Dialog::ConfirmUninstall { app: id.to_string(), delete_data: false });
             ui.close();
         }
     }

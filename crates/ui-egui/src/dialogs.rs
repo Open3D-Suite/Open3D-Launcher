@@ -32,7 +32,7 @@ impl LauncherUi {
         let mut close = false;
         let response = match &mut dialog {
             Dialog::Notes(id) => modal.show(ctx, |ui| close = self.notes_dialog(ui, id)),
-            Dialog::ConfirmUninstall(id) => modal.show(ctx, |ui| close = self.uninstall_dialog(ui, id)),
+            Dialog::ConfirmUninstall { app, delete_data } => modal.show(ctx, |ui| close = self.uninstall_dialog(ui, app, delete_data)),
             Dialog::Replace { app, path } => modal.show(ctx, |ui| close = self.replace_dialog(ui, app, path)),
             Dialog::CloseApp(id) => modal.show(ctx, |ui| close = self.close_app_dialog(ui, id)),
             Dialog::Settings => modal.show(ctx, |ui| close = self.settings_dialog(ui, host)),
@@ -192,17 +192,27 @@ impl LauncherUi {
 
     /// Confirms removing an installed app and returns `true` when the dialog should close, including
     /// when the app entry has disappeared. It queues `Uninstall` only on confirmation and explains
-    /// the removal differently for each install source.
-    fn uninstall_dialog(&mut self, ui: &mut egui::Ui, id: &str) -> bool {
+    /// the removal differently for each install source. A program's dialog has the check box that
+    /// deletes its settings and data too, unticked (D-045).
+    fn uninstall_dialog(&mut self, ui: &mut egui::Ui, id: &str, delete_data: &mut bool) -> bool {
         let Some(entry) = self.entry(id).cloned() else { return true };
         let t = Tokens::get(ui.ctx());
         ui.set_width(420.0);
         Self::title(ui, crate::icons::app(id), &fmt(tl!("Uninstall {name}?"), &[("name", entry.app.name)]), "");
-        let how = tl!("The app will be removed. Your documents and settings stay.");
+        let program = entry.app.is_standalone();
+        let how = if program && *delete_data {
+            tl!("The app will be removed, with its settings and data. Your documents stay.")
+        } else {
+            tl!("The app will be removed. Your documents and settings stay.")
+        };
         ui.label(RichText::new(how).color(t.muted));
         // A program its package installed for everyone: Windows' own prompt comes first.
         if entry.installed.as_ref().is_some_and(|installed| installed.source == open3d_launcher_core::InstallSource::Msi) {
             ui.label(RichText::new(tl!("Windows will ask for permission to remove it.")).color(t.muted));
+        }
+        if program {
+            ui.add_space(10.0);
+            ui.checkbox(delete_data, tl!("Also delete its settings and data"));
         }
         ui.add_space(20.0);
         let mut close = false;
@@ -210,7 +220,7 @@ impl LauncherUi {
         ui.horizontal(|ui| {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if widgets::button(ui, tl!("Uninstall"), Kind::Danger, 110.0).clicked() {
-                    self.act_command(Command::Uninstall { app: id.to_string() });
+                    self.act_command(Command::Uninstall { app: id.to_string(), delete_data: program && *delete_data });
                     close = true;
                 }
                 if widgets::button(ui, tl!("Cancel"), Kind::Secondary, 90.0).clicked() {

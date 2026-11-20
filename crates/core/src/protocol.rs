@@ -17,59 +17,37 @@ use crate::status::Installed;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     /// Look up the latest releases. `force` skips the freshness window (the user pressed Refresh).
-    CheckForUpdates {
-        force: bool,
-    },
+    CheckForUpdates { force: bool },
     /// Look again at what's installed.
     Detect,
     /// Fetch published versions for the selector without starting an install.
-    ListVersions {
-        app: String,
-    },
+    ListVersions { app: String },
     /// Install or update an app to its latest release.
-    Install {
-        app: String,
-    },
+    Install { app: String },
     /// `Install`, writing over what [`Event::Occupied`] reported. `path` is the path the user
     /// agreed to overwrite: if the install would now write somewhere else, nothing is replaced and
     /// the user is asked again.
-    Replace {
-        app: String,
-        path: String,
-    },
-    Uninstall {
-        app: String,
-    },
+    Replace { app: String, path: String },
+    /// Remove an installed app. With `delete_data`, a program's settings and data go too, once the
+    /// program itself is gone (D-045); a 3ds Max plug-in's are always kept.
+    Uninstall { app: String, delete_data: bool },
     /// `Install` for a program that [`Event::AppOpen`] said is open: asks it to quit first, waits
     /// for it to end, then installs. If it doesn't end, nothing is changed.
-    CloseAndInstall {
-        app: String,
-    },
+    CloseAndInstall { app: String },
     /// Start an installed app, passing `args` (the user's launch flags) on its command line.
-    Launch {
-        app: String,
-        args: Vec<String>,
-    },
+    Launch { app: String, args: Vec<String> },
     /// Show the installed app in the file manager.
-    Reveal {
-        app: String,
-    },
+    Reveal { app: String },
     /// Pause a running download, keeping what's downloaded so far (`Install` resumes it).
-    Pause {
-        app: String,
-    },
+    Pause { app: String },
     /// Stop a running download, or throw away a paused one or one kept after a failed install.
-    Cancel {
-        app: String,
-    },
+    Cancel { app: String },
     /// Download the newer Open3D Launcher, put it in place and restart into it.
     UpdateLauncher,
     /// Fetch the pictures of an app's details page (`core::details`), one [`Event::Screenshot`]
     /// each, the lead picture first. Pictures already saved on this machine arrive without
     /// touching the network. Asking again while they are on their way does nothing.
-    FetchScreenshots {
-        app: String,
-    },
+    FetchScreenshots { app: String },
     /// Change how the backend behaves.
     Configure(BackendOptions),
 }

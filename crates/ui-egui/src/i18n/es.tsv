@@ -108,6 +108,8 @@
 	Done	Listo
 	Uninstall {name}?	¿Desinstalar {name}?
 	The app will be removed. Your documents and settings stay.	La aplicación se quitará. Tus documentos y ajustes se conservan.
+	The app will be removed, with its settings and data. Your documents stay.	La aplicación se quitará, con sus ajustes y datos. Tus documentos se conservan.
+	Also delete its settings and data	Borrar también sus ajustes y datos
 	Uninstall	Desinstalar
 	Cancel	Cancelar
 	Checked {ago}	Comprobado {ago}
@@ -265,6 +267,8 @@ filter	Installed	Instaladas
 @msg	{name} updated to {version}. A program that is still running keeps using files of the copy that was installed until it closes.	{name} actualizada a {version}. Un programa que sigue abierto seguirá usando archivos de la copia que estaba instalada hasta que se cierre.
 @msg	{name} installed: {version}. A program that is still running keeps using files of the copy that was installed until it closes.	{name} instalada: {version}. Un programa que sigue abierto seguirá usando archivos de la copia que estaba instalada hasta que se cierre.
 @msg	{name} was removed. A program that is still running keeps using files of the copy that was installed until it closes.	Se quitó {name}. Un programa que sigue abierto seguirá usando archivos de la copia que estaba instalada hasta que se cierre.
+@msg	{name} was removed. Its settings and data were deleted too.	Se quitó {name}. Sus ajustes y datos también se borraron.
+@msg	{name} was removed. Its settings and data couldn't all be deleted; the launcher's log says what is left.	Se quitó {name}. No se pudieron borrar todos sus ajustes y datos; el registro del iniciador dice qué queda.
 @msg	{name} is running. Quit it, then try again.	{name} está abierta. Ciérrala y vuelve a intentarlo.
 @msg	{name} is open; close it and try again.	{name} está abierta; ciérrala y vuelve a intentarlo.
 @msg	{name} didn't close when asked, so it wasn't updated. Close it and try again.	{name} no se cerró al pedírselo, así que no se actualizó. Ciérrala y vuelve a intentarlo.

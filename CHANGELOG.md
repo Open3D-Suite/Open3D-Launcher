@@ -35,6 +35,10 @@ What each version of the Open3D Launcher adds, newest first.
   it installed in your user folder before stay there and keep working; it no longer lists them.
 - **A program that is open is never updated or removed,** also when another account on the computer has
   it open: the launcher looks at the programs that run and says "… is open; close it and try again".
+- **Uninstalling a program can delete its settings and data too.** The uninstall dialog of OpenView,
+  OpenRef, OpenFarm and OpenGaussian has a box, unticked, "Also delete its settings and data": once the
+  program is removed, its folders `%APPDATA%\Open3D\<App>` and `%LOCALAPPDATA%\Open3D\<App>` go (for a
+  portable launcher, those inside its own folder), and nothing else. Unticked, they stay as before.
 - **Close OpenFarm and update.** OpenFarm keeps running without its window, so when it is open the launcher
   offers to close it, waits for it to end and then updates it. If it doesn't close, nothing is changed.
 - **The setting "Ask for permission once when updating all apps" is gone.** It never did anything in

@@ -515,15 +515,22 @@ fn published_checksum(release: &Release, asset: &Asset, http: &Http) -> Result<O
     Ok(release::parse_sha256sums(&text).into_iter().find(|(_, n)| *n == asset.name).map(|(h, _)| h))
 }
 
+/// What a finished removal adds when the person asked for the program's settings and data to go
+/// too (D-045).
+pub(crate) const DATA_DELETED: &str = "Its settings and data were deleted too.";
+/// The same, when some of them couldn't be deleted.
+pub(crate) const DATA_LEFT: &str = "Its settings and data couldn't all be deleted; the launcher's log says what is left.";
+
 /// Removes an installed copy. `phase` hears when the removal has to wait for another install;
-/// `stop` cancels it while it waits.
+/// `stop` cancels it while it waits. With `delete_data`, a program's settings and data go too, once
+/// the program itself is gone (D-045).
 pub(crate) fn uninstall(
     app: &SuiteApp,
     installed: &Installed,
     record: Option<&Record>,
     paths: &Paths,
-    stop: &Stop,
-    phase: &mut dyn FnMut(JobPhase),
+    (stop, phase): (&Stop, &mut dyn FnMut(JobPhase)),
+    delete_data: bool,
 ) -> Result<Note, String> {
     let path = PathBuf::from(&installed.location);
     // A standalone app is found by its own program, whoever installed it, and is never removed
@@ -531,15 +538,17 @@ pub(crate) fn uninstall(
     let remove_program = || crate::standalone::uninstall(app, &path).map(crate::standalone::still_running_note);
     if app.is_standalone() {
         program_closed(app)?;
-        if installed.source == InstallSource::Msi {
+        let note = if installed.source == InstallSource::Msi {
             // Its package removes it, for everyone; Windows asks for permission.
             let exes = program_exes(app);
             let closed = || closed_now(app, &exes);
             let log = paths.logs().join(format!("{}-uninstall.log", app.id));
             let run = crate::msi::Run { msiexec: &crate::msi::SystemMsiexec, turns: &crate::msi::INSTALLER, stop, phase, log, closed: &closed };
-            return crate::msi::uninstall(app, &crate::msi::WindowsRegistry, run).map(|()| None);
-        }
-        return remove_program();
+            crate::msi::uninstall(app, &crate::msi::WindowsRegistry, run).map(|()| None)?
+        } else {
+            remove_program()?
+        };
+        return Ok(if delete_data { delete_program_data(app, &crate::program_data::folders_of(app.name)) } else { note });
     }
     if matches!(installed.source, InstallSource::Launcher) && process::is_running(&path) {
         return Err(format!("{} is running. Quit it, then try again.", app.name));
@@ -557,6 +566,17 @@ pub(crate) fn uninstall(
         // A tarball the launcher unpacked into its own folder: take the tree out and leave the
         // app's settings (`home/`) alone, so a reinstall finds its projects where they were.
         other => Err(format!("{} can't be removed from here", other.label())),
+    }
+}
+
+/// Deletes `app`'s settings and data `folders` and says how that went (D-045).
+fn delete_program_data(app: &SuiteApp, folders: &crate::program_data::Folders) -> Note {
+    match crate::program_data::delete(folders) {
+        Ok(()) => Some(DATA_DELETED),
+        Err(left) => {
+            log::warn!("{}: couldn't delete all of its settings and data: {left}", app.name);
+            Some(DATA_LEFT)
+        }
     }
 }
 
@@ -698,6 +718,38 @@ mod tests {
         assert_eq!(picked(&zip_only, None), Some(("phototool-0.5.0-windows-x64.zip".into(), PackageKind::AppZip)));
         assert_eq!(picked(&both, Some(&found(InstallSource::AppFolder))).map(|(_, kind)| kind), Some(PackageKind::Msi));
         assert_eq!(picked(&zip_only, Some(&found(InstallSource::Msi))), None);
+    }
+
+    /// D-045: the uninstall's check box deletes the program's two folders and says so.
+    #[test]
+    fn the_uninstall_check_box_deletes_the_programs_settings_and_data() {
+        let tmp = tempfile::tempdir().unwrap();
+        let folders = crate::program_data::folders_from(
+            "PhotoTool",
+            None,
+            Some(tmp.path().join("Roaming").into()),
+            None,
+            Some(tmp.path().join("Local").into()),
+        );
+        for folder in [folders.settings.as_ref().unwrap(), folders.data.as_ref().unwrap()] {
+            std::fs::create_dir_all(folder).unwrap();
+            std::fs::write(folder.join("settings.json"), b"{}").unwrap();
+        }
+        let shared = tmp.path().join("Roaming").join("Open3D").join("settings.json");
+        std::fs::write(&shared, br#"{"language":"es"}"#).unwrap();
+        assert_eq!(delete_program_data(&program(), &folders), Some(DATA_DELETED));
+        assert!(!folders.settings.as_ref().unwrap().exists() && !folders.data.as_ref().unwrap().exists());
+        assert!(shared.is_file());
+        // One that can't be deleted: the person hears that some is left.
+        std::fs::create_dir_all(folders.data.as_ref().unwrap()).unwrap();
+        let file = folders.data.as_ref().unwrap().join("open.log");
+        std::fs::write(&file, b"in use").unwrap();
+        let held = {
+            use std::os::windows::fs::OpenOptionsExt;
+            std::fs::OpenOptions::new().read(true).share_mode(1).open(&file).unwrap()
+        };
+        assert_eq!(delete_program_data(&program(), &folders), Some(DATA_LEFT));
+        drop(held);
     }
 
     /// D-156: once the package has installed, the zip's copy in the user's folder goes with its
