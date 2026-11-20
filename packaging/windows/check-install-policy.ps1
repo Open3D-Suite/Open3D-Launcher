@@ -7,7 +7,9 @@
   actions are exercised. No AppSearch, install, repair, removal or file-writing action runs.
   Checks: per-user scope, the UpgradeCode, the default folder under the per-user Open3D suite
   folder, that an update keeps the previous or an explicitly chosen folder (in the wizard and in
-  silent updates), and the HKCU registration the launcher and the next installer read back.
+  silent updates), the HKCU registration the launcher and the next installer read back, and the
+  custom actions: exactly those install-policy.json lists, and the uninstall cleanup (the installed
+  exe with --uninstall-cleanup) only deferred, on a real uninstall, before the files go.
 #>
 param([Parameter(Mandatory = $true)] [string] $MsiPath)
 $ErrorActionPreference = 'Stop'
@@ -80,7 +82,32 @@ try {
       $execute['Open3DRestoreLauncherFolder'] -lt $execute['CostInitialize'])) {
     throw 'Silent updates must restore the launcher folder after AppSearch and before directory costing.'
   }
-  Write-Output 'PASS Open3D Launcher: per-user scope, suite folder, remembered and chosen folders, registration. Nothing was installed.'
+  # The custom actions: exactly the policy's, the WiX ones named for the package's platform.
+  $platform = $installer.SummaryInformation($file, 0).Property(7)
+  $arch = switch -Regex ($platform) { '^x64;' { 'X64' } '^Intel;' { 'X86' } '^Arm64;' { 'A64' } default { throw "Unknown platform $platform." } }
+  $expected = @($policy.customActions | ForEach-Object { (@($_) | ForEach-Object { $_.Replace('{ARCH}', $arch) }) -join '|' } | Sort-Object)
+  $actions = @(Read-Rows $database 'SELECT `Action`, `Type`, `Source`, `Target` FROM `CustomAction`' 4 | ForEach-Object { $_ -join '|' } | Sort-Object)
+  $extra = @($actions | Where-Object { $_ -notin $expected })
+  $missing = @($expected | Where-Object { $_ -notin $actions })
+  if ($extra.Count -or $missing.Count) {
+    throw "The custom actions changed. Not in the policy: $($extra -join '; '). Missing: $($missing -join '; ')."
+  }
+  # The uninstall cleanup: deferred in the execute sequence only, on a real uninstall, before the files go.
+  $cleanup = $policy.uninstallCleanup
+  $runs = @(Read-Rows $database ('SELECT `Condition`, `Sequence` FROM `InstallExecuteSequence` WHERE `Action` = ''' + $cleanup.action + '''') 2)
+  if ($runs.Count -ne 1 -or $runs[0][0] -ne $cleanup.condition) {
+    throw "The uninstall cleanup must run once, only when $($cleanup.condition)."
+  }
+  if (-not ($execute[$cleanup.after] -lt [int]$runs[0][1] -and [int]$runs[0][1] -lt $execute[$cleanup.before])) {
+    throw "The uninstall cleanup must run after $($cleanup.after) and before $($cleanup.before)."
+  }
+  $tables = @(Read-Rows $database 'SELECT `Name` FROM `_Tables`' 1 | ForEach-Object { $_[0] })
+  foreach ($table in @('InstallUISequence', 'AdminExecuteSequence', 'AdminUISequence', 'AdvtExecuteSequence') | Where-Object { $_ -in $tables }) {
+    if (@(Read-Rows $database ('SELECT `Action` FROM `' + $table + '` WHERE `Action` = ''' + $cleanup.action + '''') 1).Count) {
+      throw "The uninstall cleanup must not be in $table."
+    }
+  }
+  Write-Output 'PASS Open3D Launcher: per-user scope, suite folder, remembered and chosen folders, registration, custom actions. Nothing was installed.'
 } finally {
   foreach ($com in @($session, $database, $installer)) {
     if ($null -ne $com) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($com) }

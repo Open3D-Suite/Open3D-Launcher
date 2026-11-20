@@ -19,8 +19,13 @@ fn program() -> Result<PathBuf, String> {
 }
 
 pub fn is_enabled() -> bool {
+    entry().is_some()
+}
+
+/// The start-at-login value as written (`"<exe>" --hidden`), when there is one.
+pub(crate) fn entry() -> Option<String> {
     #[cfg(windows)]
-    return windows_run().and_then(|k| k.get_value::<String, _>("Open3D Launcher").ok()).is_some();
+    return windows_run().and_then(|k| k.get_value::<String, _>("Open3D Launcher").ok());
 }
 
 pub fn set_enabled(on: bool) -> Result<(), String> {

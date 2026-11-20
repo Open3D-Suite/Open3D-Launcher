@@ -33,6 +33,7 @@ pub mod self_update;
 pub mod single_instance;
 mod source;
 mod standalone;
+pub mod uninstall_cleanup;
 mod work_folder;
 
 pub use backend::NativeBackend;

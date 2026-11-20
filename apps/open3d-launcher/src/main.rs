@@ -41,6 +41,18 @@ fn main() -> ExitCode {
     if let Some(done) = open3d_launcher_native::self_update::finish(&std::env::args_os().skip(1).collect::<Vec<_>>()) {
         return if done.is_ok() { ExitCode::SUCCESS } else { ExitCode::FAILURE };
     }
+    // The launcher's MSI is removing it (a real uninstall, not an update): its start-at-login
+    // entry and its caches go, with no window, log file or single-instance claim (D-045, D-158).
+    #[cfg(windows)]
+    if std::env::args_os().nth(1).is_some_and(|first| first == open3d_launcher_native::uninstall_cleanup::FLAG) {
+        return match open3d_launcher_native::uninstall_cleanup::run() {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                log::warn!("the uninstall left some of the launcher's files: {e}");
+                ExitCode::FAILURE
+            }
+        };
+    }
     // Detect system language in the background so the first frame can use it.
     open3d_launcher_ui_egui::i18n::detect_system_lang_in_background();
     // `std::env::args` panics on an argument that is not UTF-8, and the launcher is started with

@@ -30,8 +30,7 @@ as a change that makes it old.
   - only with `tools\check.ps1 -Full`: the ignored test of the live signed catalog. The other network test
     reads `carlesllavata/wordtool`, which does not exist, and is left out.
 - CI: `.github/workflows/check.yml` runs `tools\check.ps1`, without `-Full`, on every push and pull request
-  to `main`, on GitHub's Windows runner with Python 3.14.
-- `cargo xtask ci` runs fmt, clippy and the tests, with `--locked`.
+  to `main`, on GitHub's Windows runner with Python 3.14. `cargo xtask ci` runs fmt, clippy and the tests.
 - `.editorconfig`, `.gitattributes`, `rustfmt.toml`, `clippy.toml`, `ruff.toml`, `LICENSE`, `tools/check.ps1`
   and `tools/repo.py` are the same in every Open3D repo, and `crates/ui-egui/src/open3d_settings.rs` with
   `open3d_settings_cases.txt` the same in every repo that has them. Do not change them here. This repo's own part:
@@ -44,7 +43,8 @@ as a change that makes it old.
   X.Y.Z` writes it there, in `Cargo.lock` and in the README's `Status: early (vX.Y.Z)` line;
   `cargo xtask version set` writes only the first two. By hand: a `## X.Y.Z` section in `CHANGELOG.md`.
 - `python -I tools\publish.py launcher --dry-run` needs that section and WiX 5: `package.ps1` builds the
-  per-user MSI, whose UpgradeCode must be the one in `install-policy.json`, and the portable zip.
+  per-user MSI, whose UpgradeCode and custom actions must be those of `install-policy.json`, and the portable
+  zip. A real uninstall runs it with `--uninstall-cleanup` (`uninstall_cleanup.rs`): its login value and caches go.
 - Each app is packaged and released from its own repo (`tools/repo.py package` / `release`), not from here.
   `tools/publish.py` never pushes and never publishes a release. With `--dry-run` it also commits, tags and
   uploads nothing. Without it:

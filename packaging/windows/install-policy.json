@@ -19,6 +19,22 @@
     "NOTICE",
     "open3d-launcher.exe"
   ],
+  "customActions": [
+    ["Open3DRestoreLauncherFolder", "51", "INSTALLFOLDER", "[PREVIOUSINSTALLFOLDER]"],
+    ["SetINSTALLDESKTOPSHORTCUT", "307", "INSTALLDESKTOPSHORTCUT", "1"],
+    ["RememberNoDesktopShortcut", "51", "DESKTOPSHORTCUTCHOICE", "0"],
+    ["RememberDesktopShortcut", "51", "DESKTOPSHORTCUTCHOICE", "1"],
+    ["LaunchOpen3DLauncher", "65", "Wix4UtilCA_{ARCH}", "WixShellExec"],
+    ["WixUIPrintEula_{ARCH}", "65", "WixUiCa_{ARCH}", "PrintEula"],
+    ["WixUIValidatePath_{ARCH}", "65", "WixUiCa_{ARCH}", "ValidatePath"],
+    ["Open3DUninstallCleanup", "1106", "Open3DLauncherExe", "--uninstall-cleanup"]
+  ],
+  "uninstallCleanup": {
+    "action": "Open3DUninstallCleanup",
+    "condition": "REMOVE=\"ALL\" AND NOT UPGRADINGPRODUCTCODE",
+    "after": "InstallInitialize",
+    "before": "RemoveFiles"
+  },
   "registry": [
     [
       "1",

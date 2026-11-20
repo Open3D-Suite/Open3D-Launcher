@@ -41,6 +41,10 @@ What each version of the Open3D Launcher adds, newest first.
   portable launcher, those inside its own folder), and nothing else. Unticked, they stay as before.
 - **Close OpenFarm and update.** OpenFarm keeps running without its window, so when it is open the launcher
   offers to close it, waits for it to end and then updates it. If it doesn't close, nothing is changed.
+- **Uninstalling the launcher cleans up after it.** It also takes away its "Start Open3D Launcher when I
+  log in" entry, if it starts that launcher, and its caches: downloads, saved release answers and pictures.
+  Its settings, the record of the apps it installed and its logs stay, and so do the apps. Updating the
+  launcher changes none of this.
 - **The setting "Ask for permission once when updating all apps" is gone.** It never did anything in
   Open3D: Update all updates each app on its own, and Windows asks for permission for each program that
   needs it.

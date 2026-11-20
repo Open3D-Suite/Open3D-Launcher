@@ -7,6 +7,13 @@ launcher's self-update runs the new MSI with `/passive`) lands in the same folde
 choice; an explicit `INSTALLFOLDER` on the command line wins. Staying per-user is what lets the
 launcher update itself without elevation.
 
+Uninstalling it (not an update, which replaces it) first runs the installed `open3d-launcher.exe
+--uninstall-cleanup`, its one custom action of its own: the start-at-login entry, if it starts that
+exe, and the caches in its data folder go (downloads, saved release answers, the feed, the details
+pictures, the signed catalog and its icons, the update helper). Its settings, the record of the apps
+it installed and its logs stay, and so do the apps. A cleanup that fails never stops the uninstall.
+`check-install-policy.ps1` accepts exactly that action, with that condition and schedule.
+
 The portable zip needs no installer: `portable.txt` next to `open3d-launcher.exe` keeps the
 settings and download cache in `Open3DLauncherData\` beside it.
 
