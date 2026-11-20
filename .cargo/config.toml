@@ -4,3 +4,8 @@ include = [{ path = "config.local.toml", optional = true }]
 
 [alias]
 xtask = "run -p xtask --"
+
+# The Visual C++ runtime is linked into open3d-launcher.exe, so nothing has to be installed beside
+# it (D-151). The update helper is a copy of the same exe.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

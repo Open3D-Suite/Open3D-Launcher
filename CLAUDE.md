@@ -17,7 +17,8 @@ as a change that makes it old.
 
 ## Build and check
 
-- Build: `cargo build --release -p open3d-launcher`. An ignored `.cargo/config.local.toml` is read if present.
+- Build: `cargo build --release -p open3d-launcher`. `.cargo/config.toml` links the Visual C++ runtime into
+  the exe (`+crt-static`), so it needs no `VCRUNTIME140.dll`; an ignored `.cargo/config.local.toml` is read if present.
 - Checks: `tools\check.ps1` runs them all, and all must pass. It needs Python 3.11 or newer and the ruff
   that `ruff.toml` names. First what `tools/repo.py` has built in: the version agrees in its three places,
   every source has its licence line, the common lints, no path of somebody's computer (`tools/repo.toml`

@@ -62,7 +62,8 @@ if (-not $env:OPEN3D_LAUNCHER_BUILD_DATE) { $env:OPEN3D_LAUNCHER_BUILD_DATE = (G
 Write-Output "$AppName $Version for Windows $Arch ($Target)"
 
 if (-not $SkipBuild) {
-  # Static CRT: no VC++ redistributable needed. And the paths rustc writes into the program (a panic
+  # Static CRT: no VC++ redistributable needed. These flags replace the rustflags of .cargo/config.toml,
+  # so the +crt-static there is repeated here. And the paths rustc writes into the program (a panic
   # message names its source file) are cut down to "cargo\..." and "target\...", so the published
   # exe says nothing of the folders of the machine that built it. Passed as CARGO_ENCODED_RUSTFLAGS
   # because those folders may have spaces in their names; with --target, cargo applies these flags
