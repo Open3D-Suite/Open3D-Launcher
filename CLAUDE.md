@@ -66,7 +66,8 @@ as a change that makes it old.
 ## Rules of this code
 
 - Apps are installed from zips, per user, with no administrator rights: a 3ds Max app's `<App>.bundle`
-  into `%APPDATA%\Autodesk\ApplicationPlugins`, a program into `%LOCALAPPDATA%\Programs\Open3D\<App>`.
+  into `%APPDATA%\Autodesk\ApplicationPlugins`, a program into `%LOCALAPPDATA%\Programs\Open3D\<App>`
+  (a portable launcher's into `Open3DLauncherData\Programs\<App>`, with no shortcut).
 - The zip is `<id>-<ver>-windows-x64-3dsmax.zip` with the bundle at its root, or `<id>-<ver>-windows-x64.zip`
   with `<App>.exe` at its root or where the catalog's `exe` says. `AppVersion` in `PackageContents.xml`, or
   the exe's file version, must be the release's, and a download with no published SHA-256 is refused.

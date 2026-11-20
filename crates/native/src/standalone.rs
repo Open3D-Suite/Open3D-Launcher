@@ -5,7 +5,8 @@
 //! or the program where the catalog's `exe` says (`bin/OpenGaussian.exe`, for a program that needs
 //! the folders around it). They go in `%LOCALAPPDATA%\Programs\Open3D\<App>`, beside the launcher's
 //! own folder: per user, so no administrator rights are needed. A first install adds `<App>.lnk` to
-//! the Start menu and to the desktop.
+//! the Start menu and to the desktop. A portable launcher keeps them in `Open3DLauncherData\Programs`
+//! instead, with no shortcut ([`Places::portable`]).
 //!
 //! Work happens in `.open3d-<id>` beside the app folders, as for 3ds Max bundles
 //! ([`crate::max_bundle`], [`crate::work_folder`]): the new copy is unpacked and checked in
@@ -35,7 +36,7 @@ pub struct Places {
 }
 
 impl Places {
-    /// This account's folders.
+    /// This account's folders, or a portable launcher's own ([`Self::portable`]).
     pub fn system() -> Option<Self> {
         // Development builds only: installs go under a test folder (the release build ignores it).
         if cfg!(debug_assertions)
@@ -43,7 +44,22 @@ impl Places {
         {
             return Some(Self::under(Path::new(&root)));
         }
-        Some(Self { apps: dirs::data_local_dir()?.join("Programs").join("Open3D"), shortcuts: shortcut_folders() })
+        Self::of_launcher(crate::paths::portable_root().as_deref())
+    }
+
+    /// The folders of a launcher whose portable data folder is `portable`, or of one installed
+    /// for this account (`None`).
+    fn of_launcher(portable: Option<&Path>) -> Option<Self> {
+        match portable {
+            Some(data) => Some(Self::portable(data)),
+            None => Some(Self { apps: dirs::data_local_dir()?.join("Programs").join("Open3D"), shortcuts: shortcut_folders() }),
+        }
+    }
+
+    /// A portable launcher's: `Programs` in its `Open3DLauncherData`, and no shortcut, so that it
+    /// writes nothing outside its own folder on the computer it runs on (D-153).
+    pub(crate) fn portable(data: &Path) -> Self {
+        Self { apps: data.join("Programs"), shortcuts: Vec::new() }
     }
 
     /// Everything under one folder: tests, and development builds with `OPEN3D_LAUNCHER_APPS_ROOT`.
@@ -647,6 +663,28 @@ mod tests {
         std::fs::write(&text, b"0.5.0").unwrap();
         assert_eq!(exe_version(&text), None);
         assert_eq!(exe_version(&tmp.path().join("missing.exe")), None);
+    }
+
+    /// A portable launcher unpacks a program inside its own folder and leaves no shortcut on the
+    /// computer (D-153).
+    #[test]
+    fn a_portable_launcher_keeps_its_programs_inside_its_own_folder() {
+        let tmp = tempfile::tempdir().unwrap();
+        let data = tmp.path().join("Suite").join("Open3DLauncherData");
+        let places = Places::of_launcher(Some(&data)).unwrap();
+        assert_eq!(places, Places::portable(&data));
+        assert_eq!(places.apps, data.join("Programs"));
+        // An installed launcher keeps them in the account's own Programs folder.
+        let installed = Places::of_launcher(None).unwrap();
+        assert!(installed.apps.ends_with(Path::new("Programs").join("Open3D")), "{}", installed.apps.display());
+        assert!(places.shortcuts.is_empty());
+        let record = install_sample(tmp.path(), &places, "0.5.0", "x").unwrap();
+        assert_eq!(record.path, data.join("Programs").join("PhotoTool").join("PhotoTool.exe"));
+        assert_eq!(names(tmp.path().join("Suite").as_path()), ["Open3DLauncherData"]);
+        assert_eq!(names(&data), ["Programs"]);
+        assert_eq!(installed_version(&places).as_deref(), Some("0.5.0"));
+        remove(&app(), &record.path, &places).unwrap();
+        assert!(names(&data.join("Programs")).is_empty());
     }
 
     #[test]
