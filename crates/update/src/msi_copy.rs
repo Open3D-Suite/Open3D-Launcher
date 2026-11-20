@@ -113,6 +113,13 @@ fn same_path(a: &Path, b: &Path) -> bool {
     a.as_os_str().to_string_lossy().eq_ignore_ascii_case(&b.as_os_str().to_string_lossy())
 }
 
+/// The folder the launcher's own per-user MSI installs to when nobody chose another one, `local`
+/// being `%LOCALAPPDATA%`: `Programs\Open3D\<folder>`, as `packaging/windows/open3d-launcher.wxs`
+/// says.
+pub(crate) fn default_dir(local: &Path, app: &crate::app::App) -> PathBuf {
+    local.join("Programs").join("Open3D").join(app.folder)
+}
+
 /// An `App Paths` default value as a path: Windows allows it in quotes.
 pub(crate) fn app_path_value(value: &str) -> Option<PathBuf> {
     let value = value.trim().trim_matches('"').trim();
@@ -199,11 +206,11 @@ pub(crate) mod windows {
     }
 
     /// The launcher's own per-user MSI: the folder its wizard records in HKCU, or its default
-    /// `%LOCALAPPDATA%\Programs\<App Name>`.
+    /// `%LOCALAPPDATA%\Programs\Open3D\Launcher` ([`super::default_dir`]).
     fn is_legacy(app: &App, exe: &Path) -> bool {
         let Some(dir) = exe.parent() else { return false };
         let recorded = recorded_dir(app).map(|d| canonical(&d));
-        let default = crate::folders::data_local_dir().map(|d| canonical(&d.join("Programs").join(app.name)));
+        let default = crate::folders::data_local_dir().map(|d| canonical(&super::default_dir(&d, app)));
         [recorded, default].into_iter().flatten().any(|d| d == dir)
     }
 
@@ -337,6 +344,22 @@ mod tests {
         assert_eq!(registered_exe(&[]), None);
         let two = [(MsiScope::PerMachine, p(r"C:\a\gridtool.exe")), (MsiScope::PerUser, p(r"C:\b\gridtool.exe"))];
         assert_eq!(registered_exe(&two), None);
+    }
+
+    /// The launcher's package installs into `Programs\Open3D\Launcher`; the folder it was looked for
+    /// in was `Programs\Open3D Launcher`.
+    #[test]
+    fn the_launchers_default_folder_is_the_one_its_package_installs_to() {
+        assert_eq!(default_dir(&p(r"D:\Local"), &crate::suite::LAUNCHER), p(r"D:\Local\Programs\Open3D\Launcher"));
+        let wxs = include_str!("../../../packaging/windows/open3d-launcher.wxs");
+        for directory in [
+            r#"<StandardDirectory Id="LocalAppDataFolder">"#,
+            r#"<Directory Id="LocalProgramsFolder" Name="Programs">"#,
+            r#"<Directory Id="Open3DSuiteFolder" Name="Open3D">"#,
+            r#"<Directory Id="INSTALLFOLDER" Name="Launcher" />"#,
+        ] {
+            assert!(wxs.contains(directory), "the package no longer has {directory}");
+        }
     }
 
     #[test]
