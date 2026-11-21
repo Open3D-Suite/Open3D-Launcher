@@ -24,9 +24,15 @@ What each version of the Open3D Launcher adds, newest first.
 - **Programs install for everyone on the computer, with their Windows Installer package.** When a release
   of OpenView, OpenRef, OpenFarm or OpenGaussian publishes its `.msi`, the launcher installs, updates and
   removes the program with it, in `C:\Program Files\Open3D\<App>`, and Windows asks for permission each
-  time. Update all runs them one after another, each with its own prompt; the card says when Windows will
-  ask. A cancelled prompt keeps the download for the next try, and an error names the installer's log in
-  the launcher's `logs` folder. Releases without a package install from their zip, as before.
+  time. The packages aren't signed yet, so Windows' prompt says "Unknown publisher". Each package adds one
+  shortcut to the Start menu, for everyone on the computer, and none to the desktop. Update all runs them
+  one after another, each with its own prompt; the card says when Windows will ask. A cancelled prompt
+  keeps the download for the next try, and an error names the installer's log in the launcher's `logs`
+  folder. Releases without a package install from their zip, as before.
+- **A program installed with its package goes back to an older version only once it is uninstalled.**
+  Windows Installer doesn't put an older version over a newer one, so the launcher says so before it
+  downloads anything: uninstall the program, then install the version you want. Nor does it put a version
+  that has no package over a copy that came from one.
 - **Once a program's package has installed, its earlier copy in your user folder goes,** with its
   shortcuts, and the launcher says so. Its settings and data stay where they are. If the package fails or
   you cancel it, the earlier copy stays and keeps working.
