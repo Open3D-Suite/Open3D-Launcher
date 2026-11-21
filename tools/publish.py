@@ -379,12 +379,25 @@ def build_launcher():
     return version, out, assets, sums, notes
 
 
+def dry_run_plan(version, tag, out, files):
+    """What a dry run tells: what a real run would do from here, which it finds out without running anything."""
+    title = "Open3D Launcher %s" % version
+    lines = ["Dry run: nothing was tagged or uploaded. The files are in %s." % out]
+    lines.append("A real run would put the annotated tag %s on HEAD, unless it is there already," % tag)
+    lines.append("and stop while %s lacks HEAD on %s or that tag, printing for the owner:" % (REMOTE, BRANCH))
+    lines += ["    " + p for p in pushes_needed(False, tag, False)]
+    lines.append("Run again once %s has both, it would build again and make the draft release %s" % (REMOTE, tag))
+    lines.append('of %s, "%s", with the CHANGELOG section of %s and:' % (LAUNCHER_REPO, title, version))
+    lines += ["    " + Path(f).name for f in files]
+    return "\n".join(lines)
+
+
 def release_launcher(version, out, assets, sums, notes, dry_run=False):
     """The annotated tag on HEAD and, once the remote has that commit and that tag, the draft release."""
-    if dry_run:
-        print("Dry run: nothing tagged or uploaded (files in %s)." % out)
-        return
     tag = "v%s" % version
+    if dry_run:
+        print(dry_run_plan(version, tag, out, assets + [sums]))
+        return
     git = ["git", "-C", str(LAUNCHER)]
     head = run(git + ["rev-parse", "HEAD"]).strip()
     found = local_tag(git, tag)

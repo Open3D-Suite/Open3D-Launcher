@@ -339,6 +339,19 @@ class Launcher(Checks):
         self.assertEqual(commands.ran, [])
         self.assertIn("Dry run", out)
 
+    def test_a_dry_run_says_what_a_real_run_would_do(self):
+        commands = world(local="", main=OLDER, tag=None, release=None)
+        out, error = self.release(commands, dry_run=True)
+        self.assertIsNone(error)
+        self.assertEqual(commands.ran, [])
+        self.assertIn("A real run would put the annotated tag v1.2.3 on HEAD", out)
+        self.assertIn("    git push origin main\n    git push origin v1.2.3\n", out)
+        self.assertIn('the draft release v1.2.3\nof carlesllavata/Open3D, "Open3D Launcher 1.2.3"', out)
+        for name in ("open3d-launcher-1.2.3-windows-x64.msi", "open3d-launcher-1.2.3-windows-x64-portable.zip"):
+            self.assertIn("    %s\n" % name, out)
+        self.assertIn("    SHA256SUMS.txt", out)
+        self.assert_nothing_left(commands, out)
+
     def test_a_first_run_tags_and_stops_before_any_release_call(self):
         commands = world(local="", main=OLDER, tag=None)
         out, error = self.release(commands)
