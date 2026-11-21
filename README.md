@@ -50,7 +50,7 @@ Removing the launcher leaves the apps you installed with it where they are: remo
 first if you want them gone. Removing a program keeps its settings and data, unless you tick *Also delete
 its settings and data*; removing a 3ds Max app keeps its settings.
 
-> Status: early (v0.3.4). What each version adds: [CHANGELOG.md](CHANGELOG.md).
+> Status: early (v0.4.0). What each version adds: [CHANGELOG.md](CHANGELOG.md).
 
 ### Apps
 

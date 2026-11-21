@@ -2,7 +2,7 @@
 
 What each version of the Open3D Launcher adds, newest first.
 
-## In development
+## 0.4.0 — 21 November 2026
 
 - **One language for the launcher and the Open3D apps.** The language you choose in Settings is now the
   one the Open3D apps use too (OpenRef for now, the others as they are updated): they show it the next time
