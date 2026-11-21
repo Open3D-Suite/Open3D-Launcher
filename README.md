@@ -12,14 +12,19 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
 - Installs each 3ds Max app as a plug-in bundle in `%APPDATA%\Autodesk\ApplicationPlugins`: per user, no
   administrator rights, and every 3ds Max the app supports loads it (from 2025 on; OpenScatter needs 2027).
   **Open in 3ds Max** starts the newest 3ds Max you have.
-- Installs each standalone app (a program of its own, such as OpenView) in
-  `%LOCALAPPDATA%\Programs\Open3D\<App>`, also per user and without administrator rights, with shortcuts in
-  the Start menu and on the desktop. **Open** starts it.
+- From version 0.4.0, installs each program of its own (OpenView, OpenRef, OpenFarm, OpenGaussian) for
+  everyone on the computer, in `C:\Program Files\Open3D\<App>`, with its Windows Installer package and one
+  shortcut in the Start menu. Windows asks for permission at each install, update and removal; the packages
+  aren't signed yet, so its prompt says "Unknown publisher". Once a package has installed, the copy of that
+  program an older launcher left in your user folder goes, with its shortcuts; its settings and data stay.
+  A release with no package is unpacked from its zip into `%LOCALAPPDATA%\Programs\Open3D\<App>`, for you
+  only, with shortcuts in the Start menu and on the desktop. **Open** starts the program.
 - Reads each app's versions from that app's own GitHub releases, and checks every download against its
   published SHA-256 before touching anything; a failed or interrupted update puts the previous version back.
-- Never changes a plug-in while 3ds Max is open, nor a standalone app while it is running: close it first
-  and the launcher tells you so. A 3ds Max that renders in the background (a batch or farm render) counts
-  as open: on a machine that renders, update the plug-ins between renders.
+- Never changes a plug-in while 3ds Max is open, nor a program while it is running: close it first and the
+  launcher tells you so. OpenFarm keeps running without its window, so for it the launcher offers **Close
+  OpenFarm and update**. A 3ds Max that renders in the background (a batch or farm render) counts as open:
+  on a machine that renders, update the plug-ins between renders.
 - Updates itself. It keeps running in the notification area when you close its window and can start with
   Windows (both in *Preferences*).
 - English and Spanish. No account, no sign-in, no telemetry.
@@ -32,15 +37,18 @@ From the [latest release](https://github.com/carlesllavata/Open3D/releases/lates
 
 - `open3d-launcher-<version>-windows-x64.msi`: the installer. It installs for you only, without
   administrator rights, in `%LOCALAPPDATA%\Programs\Open3D\Launcher`, with a Start menu shortcut and, if you
-  tick it, a desktop one. Remove it from Windows' *Settings > Apps > Installed apps*.
+  tick it, a desktop one. Remove it from Windows' *Settings > Apps > Installed apps*: that also takes away
+  its start-at-login entry and its caches, and keeps its settings.
 - `open3d-launcher-<version>-windows-x64-portable.zip`: no installation. Unzip it anywhere and run
-  `open3d-launcher.exe`; its settings stay in `Open3DLauncherData` next to it (see `portable.txt`).
+  `open3d-launcher.exe`; its settings stay in `Open3DLauncherData` next to it (see `portable.txt`). It
+  installs the programs from their zips inside that folder, with no shortcut and no permission prompt.
 
 The launcher isn't code-signed, so the first time Windows SmartScreen may say "Windows protected your PC":
 choose **More info > Run anyway**. Updates are checked against the checksums published with each release.
 
 Removing the launcher leaves the apps you installed with it where they are: remove them from the launcher
-first if you want them gone. Removing an app keeps its settings.
+first if you want them gone. Removing a program keeps its settings and data, unless you tick *Also delete
+its settings and data*; removing a 3ds Max app keeps its settings.
 
 > Status: early (v0.3.4). What each version adds: [CHANGELOG.md](CHANGELOG.md).
 
@@ -85,12 +93,17 @@ More apps are added to the catalog as they are published.
   at most once an hour unless you press *Check for updates*.
 - **3ds Max apps.** The package is `<id>-<version>-windows-x64-3dsmax.zip`, with the `.bundle` folder at the
   zip's root; the bundle's `PackageContents.xml` must say the release's version.
-- **Standalone apps.** An app the catalog marks `package = "standalone"` is a program of its own: the
-  package is `<id>-<version>-windows-x64.zip` with `<App>.exe` at the zip's root, or where the catalog's
-  `exe` says (`exe = "bin/OpenGaussian.exe"`, for a program that needs the folders around it), and the exe's
-  file properties must say the release's version. The launcher unpacks it into
-  `%LOCALAPPDATA%\Programs\Open3D\<App>`, adds Start menu and desktop shortcuts on a first install and
-  removes them, and the whole folder, with the app. OpenView, OpenGaussian, OpenRef and OpenFarm are standalone apps.
+- **Programs.** An app the catalog marks `package = "standalone"` is a program of its own (OpenView,
+  OpenGaussian, OpenRef, OpenFarm). Its release carries `<id>-<version>-windows-x64.msi`, a Windows
+  Installer package for everyone on the computer, and `<id>-<version>-windows-x64.zip`. The launcher
+  installs, updates and removes the program with the package, which it starts like any other program so
+  that Windows asks for permission, one at a time; it finds that copy by its entry in Windows' installed
+  apps, and once the package has installed it removes the copy an older launcher unpacked in your user
+  folder. A portable launcher, or a release with no package, unpacks the zip instead: `<App>.exe` at the
+  zip's root, or where the catalog's `exe` says (`exe = "bin/OpenGaussian.exe"`, for a program that needs
+  the folders around it), whose file properties must say the release's version. A portable launcher puts
+  it in `Open3DLauncherData\Programs\<App>` with no shortcut; otherwise it goes in
+  `%LOCALAPPDATA%\Programs\Open3D\<App>`, with Start menu and desktop shortcuts on a first install.
 - **Launcher updates.** The launcher's own releases, in this repository, carry the MSI, the portable zip
   and `SHA256SUMS.txt`; an installed launcher downloads the same format it was installed from.
 
@@ -137,7 +150,7 @@ Each takes `--dry-run` to sign or build without committing, tagging or uploading
 |---|---|
 | `apps/open3d-launcher/` | the desktop program: window, tray, single instance, logging |
 | `crates/core/` | catalog, releases, versions, platforms and package formats (no I/O) |
-| `crates/native/` | downloads, install / update / remove, 3ds Max bundles (`max_bundle.rs`), standalone apps (`standalone.rs`), self-update |
+| `crates/native/` | downloads, install / update / remove, 3ds Max bundles (`max_bundle.rs`), programs' Windows Installer packages (`msi.rs`) and zips (`standalone.rs`), self-update |
 | `crates/ui-egui/` | the interface (egui) and its translations (`src/i18n/*.tsv`) |
 | `crates/update/` | the self-update library (a modified copy of craft-update) |
 | `packaging/windows/` | the MSI (WiX), the portable zip and their checks |
