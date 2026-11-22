@@ -14,7 +14,7 @@ use open3d_launcher_core::protocol::Command;
 use open3d_launcher_core::status::AppStatus;
 
 use crate::app::LauncherUi;
-use crate::i18n::{current, tr_ctx};
+use crate::i18n::{Lang, current, tr_ctx};
 use crate::model::AppEntry;
 use crate::theme::{self, Tokens, rgb, tint};
 use crate::views::date_text;
@@ -400,7 +400,7 @@ impl LauncherUi {
             (tl!("Version"), Some(r.version.as_ref().map_or_else(|| r.tag.clone(), |v| v.to_string()))),
             (tl!("Released"), r.published_at.map(date_text)),
             (tl!("Download"), size),
-            (tl!("Platforms"), Some(details.platforms.to_string())),
+            (tl!("Platforms"), Some(platforms_in(current(), details).to_string())),
         ]
         .into_iter()
         .filter_map(|(label, value)| value.map(|v| (label, v)))
@@ -596,6 +596,11 @@ fn link_buttons(ui: &mut Ui, app: &SuiteApp) {
     });
 }
 
+/// What the Platforms box of the page says, in `lang`: the catalog's line, translated like the rest of the page.
+fn platforms_in(lang: Lang, details: &AppDetails) -> &'static str {
+    tr_ctx(lang, details.id, details.platforms)
+}
+
 /// The numbered feature cells.
 fn features(ui: &mut Ui, details: &AppDetails, app: &SuiteApp, t: &Tokens) {
     widgets::eyebrow(ui, "01", tl!("Features"));
@@ -625,4 +630,17 @@ fn arrow_button(ui: &mut Ui, rect: Rect, id: Id, left: bool, tip: &str, t: &Toke
     painter.add(egui::Shape::line(points, Stroke::new(1.75, ink)));
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, tip));
     resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(tip).clicked()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The Platforms box used to show the catalog's English line in every language.
+    #[test]
+    fn the_platforms_box_is_in_the_language_of_the_page() {
+        let page = AppDetails::by_id("openview").unwrap();
+        assert_eq!(platforms_in(Lang::ES, page), "Windows 10 u 11 (64 bits)");
+        assert_eq!(platforms_in(Lang::EN, page), page.platforms);
+    }
 }
