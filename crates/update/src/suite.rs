@@ -15,7 +15,7 @@ pub const OPENTOOLS: App = App::new("opentools", "OpenTools", "Tool hub for 3ds 
 /// `%APPDATA%\Open3D\Launcher` and `%LOCALAPPDATA%\Open3D\Launcher`.
 pub const LAUNCHER: App = App {
     folder: "Launcher",
-    ..App::new("open3d-launcher", "Open3D Launcher", "Installs and updates the Open3D apps for 3ds Max", "Open3D-Suite/Open3D")
+    ..App::new("open3d-launcher", "Open3D Launcher", "Installs and updates the Open3D apps for 3ds Max", "Open3D-Suite/Open3D-Launcher")
 };
 
 /// The Open3D suite.

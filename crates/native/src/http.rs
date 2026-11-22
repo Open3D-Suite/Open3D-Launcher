@@ -838,7 +838,7 @@ pub(crate) mod tests {
     #[test]
     fn catalog_resources_come_only_from_the_pinned_origin() {
         use open3d_launcher_core::hosted_catalog::{CATALOG_ORIGIN, CATALOG_URL, FORMER_ICON_BASE_URL, ICON_BASE_URL, SIGNATURE_URL};
-        assert_eq!(CATALOG_ORIGIN, "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/");
+        assert_eq!(CATALOG_ORIGIN, "https://raw.githubusercontent.com/Open3D-Suite/Open3D-Launcher/main/");
         for url in [CATALOG_URL, SIGNATURE_URL, ICON_BASE_URL] {
             assert!(url.starts_with(CATALOG_ORIGIN), "{url}");
         }

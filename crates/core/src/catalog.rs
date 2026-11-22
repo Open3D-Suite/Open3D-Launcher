@@ -54,7 +54,7 @@ pub struct SuiteApp {
     pub name: &'static str,
     /// What it's for, in a few words (English; the UI translates it by app id).
     pub tagline: &'static str,
-    /// Brand colour (sRGB), for surfaces: github.com/Open3D-Suite/Open3D's `--app`.
+    /// Brand colour (sRGB), for surfaces: github.com/Open3D-Suite/Open3D-Launcher's `--app`.
     pub color: [u8; 3],
     /// The brand colour for text on a light background (the site's light `--app-ink`).
     pub ink_light: [u8; 3],
@@ -181,7 +181,7 @@ const fn app(
 include!(concat!(env!("OUT_DIR"), "/catalog.rs"));
 
 /// Open3D's home page: the launcher's public repository.
-pub const WEBSITE_URL: &str = "https://github.com/Open3D-Suite/Open3D";
+pub const WEBSITE_URL: &str = "https://github.com/Open3D-Suite/Open3D-Launcher";
 /// The GitHub organization every official Open3D app's repository lives under. The release feed can
 /// only move an app within it.
 pub const GITHUB_OWNER: &str = "Open3D-Suite";
@@ -196,7 +196,7 @@ pub const SOCIAL: [(&str, &str); 0] = [];
 
 /// Where to ask for help and report problems: the
 /// launcher repository's issues.
-pub const COMMUNITY_URL: &str = "https://github.com/Open3D-Suite/Open3D/issues";
+pub const COMMUNITY_URL: &str = "https://github.com/Open3D-Suite/Open3D-Launcher/issues";
 
 /// Open3D Launcher itself, described like an Open3D app so it can update itself with the same
 /// machinery (asset names `open3d-launcher-<ver>-…`). Not part of [`SUITE`].
@@ -205,7 +205,7 @@ pub const LAUNCHER: SuiteApp = app(
     "Open3D Launcher",
     "Installs and updates the Open3D apps for 3ds Max",
     [[0x24, 0x26, 0x2b], [0x24, 0x26, 0x2b], [0xff, 0x8c, 0x1a]],
-    "Open3D-Suite/Open3D",
+    "Open3D-Suite/Open3D-Launcher",
 );
 
 /// The launcher's own asset stem.
@@ -281,6 +281,10 @@ mod tests {
         for url in [WEBSITE_URL, GITHUB_URL, COMMUNITY_URL] {
             assert!(url.starts_with("https://github.com/Open3D-Suite"), "{url}");
         }
+        // The launcher's repository is Open3D-Launcher: it was carlesllavata/Open3D.
+        assert_eq!(LAUNCHER.repo, "Open3D-Suite/Open3D-Launcher");
+        assert_eq!(LAUNCHER.repo_url(), WEBSITE_URL);
+        assert_eq!(COMMUNITY_URL, format!("{WEBSITE_URL}/issues"));
         let catalog = include_str!("../catalog.toml");
         assert!(!catalog.contains(FORMER_GITHUB_OWNER), "the built-in catalog still names {FORMER_GITHUB_OWNER}");
     }

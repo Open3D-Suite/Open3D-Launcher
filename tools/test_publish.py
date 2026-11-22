@@ -346,7 +346,7 @@ class Launcher(Checks):
         self.assertEqual(commands.ran, [])
         self.assertIn("A real run would put the annotated tag v1.2.3 on HEAD", out)
         self.assertIn("    git push origin main\n    git push origin v1.2.3\n", out)
-        self.assertIn('the draft release v1.2.3\nof Open3D-Suite/Open3D, "Open3D Launcher 1.2.3"', out)
+        self.assertIn('the draft release v1.2.3\nof Open3D-Suite/Open3D-Launcher, "Open3D Launcher 1.2.3"', out)
         for name in ("open3d-launcher-1.2.3-windows-x64.msi", "open3d-launcher-1.2.3-windows-x64-portable.zip"):
             self.assertIn("    %s\n" % name, out)
         self.assertIn("    SHA256SUMS.txt", out)
@@ -412,7 +412,7 @@ class Launcher(Checks):
         create, upload = commands.ran[-2:]
         self.assertEqual(
             create[:8],
-            ["gh", "release", "create", "v1.2.3", "--repo", "Open3D-Suite/Open3D", "--draft", "--verify-tag"],
+            ["gh", "release", "create", "v1.2.3", "--repo", "Open3D-Suite/Open3D-Launcher", "--draft", "--verify-tag"],
         )
         self.assertIn("open3d-launcher-1.2.3-windows-x64.msi", upload)
         self.assertIn("open3d-launcher-1.2.3-windows-x64-portable.zip", upload)

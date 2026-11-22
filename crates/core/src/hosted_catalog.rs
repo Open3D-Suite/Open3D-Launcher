@@ -18,13 +18,13 @@ use crate::details::{AppDetails, Feature, Shot};
 
 /// The one origin catalog resources (the catalog, its signature, the app icons) may come from:
 /// this repository's `main` branch, served by GitHub.
-pub const CATALOG_ORIGIN: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/";
-pub const CATALOG_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/launcher-catalog.toml";
-pub const SIGNATURE_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/launcher-catalog.toml.sig";
+pub const CATALOG_ORIGIN: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D-Launcher/main/";
+pub const CATALOG_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D-Launcher/main/launcher-catalog.toml";
+pub const SIGNATURE_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D-Launcher/main/launcher-catalog.toml.sig";
 /// Where the catalog's app icons are published (`<id>-<sha256>.png`).
-pub const ICON_BASE_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/launcher-app-icons/";
-/// The same folder while this repository lived under [`FORMER_GITHUB_OWNER`]. A catalog that
-/// launchers before 0.5.0 can read names its icons there; they are fetched from [`ICON_BASE_URL`].
+pub const ICON_BASE_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D-Launcher/main/launcher-app-icons/";
+/// The same folder while this repository was `carlesllavata/Open3D`. A catalog that launchers before
+/// 0.5.0 can read names its icons there; they are fetched from [`ICON_BASE_URL`].
 pub const FORMER_ICON_BASE_URL: &str = "https://raw.githubusercontent.com/carlesllavata/Open3D/main/launcher-app-icons/";
 pub const PUBLIC_KEY_PEM: &str = include_str!("../assets/launcher-catalog-public-key.pem");
 pub const MAX_CATALOG_BYTES: usize = 1 << 20;
@@ -455,7 +455,9 @@ mod tests {
     #[test]
     fn a_catalog_naming_the_former_owner_is_read_under_open3d_suite() {
         let built_in = std::str::from_utf8(BUNDLED).unwrap();
-        let former = built_in.replace(GITHUB_OWNER, FORMER_GITHUB_OWNER);
+        // This repository was `carlesllavata/Open3D`; the apps' were `carlesllavata/<App>`.
+        let former_origin = FORMER_ICON_BASE_URL.strip_suffix("launcher-app-icons/").unwrap();
+        let former = built_in.replace(CATALOG_ORIGIN, former_origin).replace(GITHUB_OWNER, FORMER_GITHUB_OWNER);
         assert!(former.contains(&format!("repo = \"{FORMER_GITHUB_OWNER}/OpenTools\"")));
         assert!(former.contains(FORMER_ICON_BASE_URL));
         for (what, catalog) in

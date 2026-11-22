@@ -93,5 +93,6 @@ mod tests {
         for app in crate::suite::SUITE.iter().chain([&crate::suite::LAUNCHER]) {
             assert!(app.repo.starts_with("Open3D-Suite/"), "{}", app.id);
         }
+        assert_eq!(crate::suite::LAUNCHER.repo, "Open3D-Suite/Open3D-Launcher");
     }
 }
