@@ -446,27 +446,27 @@ mod tests {
         "release_info": {{
           "apps": {{
             "phototool": {{
-              "name": "PhotoTool", "repo": "carlesllavata/phototool",
+              "name": "PhotoTool", "repo": "Open3D-Suite/phototool",
               "latest_release": {{
                 "tag": "v0.6.0", "version": "0.6.0", "name": "PhotoTool v0.6.0",
                 "published_at": "2026-10-09T10:00:00Z",
-                "html_url": "https://github.com/carlesllavata/phototool/releases/tag/v0.6.0",
+                "html_url": "https://github.com/Open3D-Suite/phototool/releases/tag/v0.6.0",
                 "prerelease": false, "notes_markdown": "Notes",
                 "assets": [
                   {{ "name": "phototool-0.6.0-macos-universal.dmg", "size_bytes": 123,
-                     "download_url": "https://github.com/carlesllavata/phototool/releases/download/v0.6.0/phototool-0.6.0-macos-universal.dmg",
+                     "download_url": "https://github.com/Open3D-Suite/phototool/releases/download/v0.6.0/phototool-0.6.0-macos-universal.dmg",
                      "sha256": "{HASH}", "platform": {{ "os": "macos", "arch": "universal", "package_type": "dmg" }} }},
                   {{ "name": "evil.dmg", "size_bytes": 1, "download_url": "https://evil.example/evil.dmg", "sha256": null }}
                 ]
               }},
               "app_last_fetched": "2026-10-09T13:00:00Z"
             }},
-            "soundtool": {{ "name": "SoundTool", "repo": "carlesllavata/soundtool", "latest_release": null,
+            "soundtool": {{ "name": "SoundTool", "repo": "Open3D-Suite/soundtool", "latest_release": null,
                              "app_last_fetched": "2026-10-09T13:00:00Z" }},
-            "filmtool": {{ "name": "FilmTool", "repo": "carlesllavata/filmtool", "latest_release": null, "app_last_fetched": null }},
-            "vectortool": {{ "repo": "carlesllavata/vectortool", "app_last_fetched": "2026-10-01T00:00:00Z",
+            "filmtool": {{ "name": "FilmTool", "repo": "Open3D-Suite/filmtool", "latest_release": null, "app_last_fetched": null }},
+            "vectortool": {{ "repo": "Open3D-Suite/vectortool", "app_last_fetched": "2026-10-01T00:00:00Z",
                               "latest_release": {{ "tag": "v0.7.0" }} }},
-            "brandnewtool": {{ "repo": "carlesllavata/brandnewtool", "app_last_fetched": "2026-10-09T13:00:00Z" }}
+            "brandnewtool": {{ "repo": "Open3D-Suite/brandnewtool", "app_last_fetched": "2026-10-09T13:00:00Z" }}
           }},
           "last_fetched": "2026-10-09T13:00:00Z",
           "some_future_field": {{ "whatever": [1, 2, 3] }}

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! The header, toolbar, footer, the grid of cards and the table, laid out like the apps page on
-//! github.com/carlesllavata/Open3D: hairline cells, mono labels and square controls.
+//! github.com/Open3D-Suite/Open3D-Launcher: hairline cells, mono labels and square controls.
 
 use egui::{Color32, CornerRadius, FontId, Rect, RichText, Sense, Stroke, Ui, vec2};
 use open3d_launcher_core::catalog::AppKind;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Colours, type and shapes, matching github.com/carlesllavata/Open3D: hard edges, hairline rules, Archivo
+//! Colours, type and shapes, matching github.com/Open3D-Suite/Open3D-Launcher: hard edges, hairline rules, Archivo
 //! display type, Inter body text and Geist Mono labels. Widgets read [`Tokens::get`]; nothing
 //! hard-codes a colour.
 

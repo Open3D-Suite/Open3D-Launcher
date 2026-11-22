@@ -152,13 +152,13 @@ fn release(id: &str, v: &str, at: i64) -> Release {
         version: version::parse(v),
         name: format!("v{v}"),
         published_at: Some(at),
-        html_url: format!("https://github.com/carlesllavata/{id}/releases/tag/v{v}"),
-        notes: "## What's Changed\n* Faster things by @a in https://github.com/carlesllavata/x/pull/1".into(),
+        html_url: format!("https://github.com/Open3D-Suite/{id}/releases/tag/v{v}"),
+        notes: "## What's Changed\n* Faster things by @a in https://github.com/Open3D-Suite/x/pull/1".into(),
         prerelease: false,
         assets: vec![Asset {
             name: name.clone(),
             size: 150 << 20,
-            url: format!("https://github.com/carlesllavata/{id}/releases/download/v{v}/{name}"),
+            url: format!("https://github.com/Open3D-Suite/{id}/releases/download/v{v}/{name}"),
             sha256: None,
         }],
     }
@@ -778,8 +778,8 @@ fn feed_announcements_and_alerts_show_until_dismissed() {
     let sent = Rc::new(RefCell::new(Vec::new()));
     let mut evs = events();
     evs.push(Event::Notices {
-        announcements: vec![notice("a1", "CADTool 1.0 is out", Some("https://github.com/carlesllavata/Open3D/news"))],
-        alerts: vec![notice("x1", "Security update", Some("https://github.com/carlesllavata/Open3D/security"))],
+        announcements: vec![notice("a1", "CADTool 1.0 is out", Some("https://github.com/Open3D-Suite/Open3D-Launcher/news"))],
+        alerts: vec![notice("x1", "Security update", Some("https://github.com/Open3D-Suite/Open3D-Launcher/security"))],
     });
     let mut backend = Some(Fake {
         events: evs,

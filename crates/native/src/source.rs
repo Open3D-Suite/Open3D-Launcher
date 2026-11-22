@@ -334,7 +334,7 @@ mod tests {
     use super::*;
     use std::cell::Cell;
 
-    const REPO: &str = "carlesllavata/phototool";
+    const REPO: &str = "Open3D-Suite/phototool";
     /// What a blocked `api.github.com` leaves behind, and what github.com then says in turn.
     const NO_API: &str = "couldn't reach GitHub (io: connection refused)";
     const NO_PAGES: &str = "couldn't reach github.com (io: connection refused)";
@@ -438,12 +438,12 @@ mod tests {
         // github.com sends a repo without releases to its release list. A sign-in page from a
         // captive portal or a filtering proxy must not be read the same way: the saved answer is
         // better than a confident "Coming soon" on every card.
-        assert!(is_release_list("https://github.com/carlesllavata/phototool/releases", REPO));
-        assert!(is_release_list("https://github.com/carlesllavata/phototool/releases/", REPO));
+        assert!(is_release_list("https://github.com/Open3D-Suite/phototool/releases", REPO));
+        assert!(is_release_list("https://github.com/Open3D-Suite/phototool/releases/", REPO));
         for elsewhere in [
-            "https://github.com/carlesllavata/phototool/releases/tag/v0.6.0",
-            "https://github.com/carlesllavata/phototool/releases/latest",
-            "https://github.com/carlesllavata/phototool",
+            "https://github.com/Open3D-Suite/phototool/releases/tag/v0.6.0",
+            "https://github.com/Open3D-Suite/phototool/releases/latest",
+            "https://github.com/Open3D-Suite/phototool",
             "https://github.com/someone-else/phototool/releases",
             "http://portal.example/login?continue=github.com",
         ] {

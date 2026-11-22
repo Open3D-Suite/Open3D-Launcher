@@ -119,7 +119,7 @@ pub fn download_prefix(repo: &str) -> String {
 /// Whether `url` is a download that truly belongs to `repo`.
 ///
 /// A raw `starts_with(prefix)` check is not enough: a value such as
-/// `https://github.com/carlesllavata/Open3D/releases/download/../../../ATTACKER/REPO/releases/download/v1/x`
+/// `https://github.com/Open3D-Suite/Open3D-Launcher/releases/download/../../../ATTACKER/REPO/releases/download/v1/x`
 /// shares the prefix textually, yet its interpreted path escapes the repository. The link is
 /// accepted only when the text after the prefix is exactly `<tag>/<name>` — two non-empty path
 /// segments with no traversal (`.`/`..`), no additional slashes, no query or fragment, and no
@@ -339,7 +339,7 @@ pub(crate) fn truncate(s: &str, max: usize) -> String {
 mod tests {
     use super::*;
 
-    const REPO: &str = "carlesllavata/phototool";
+    const REPO: &str = "Open3D-Suite/phototool";
 
     #[test]
     fn truncate_keeps_whole_characters() {
@@ -351,7 +351,7 @@ mod tests {
 
     #[test]
     fn only_plain_https_links_pass() {
-        assert!(safe_web_link("https://github.com/carlesllavata/phototool/releases/tag/v1"));
+        assert!(safe_web_link("https://github.com/Open3D-Suite/phototool/releases/tag/v1"));
         for bad in [
             "http://example.com/",
             "javascript:alert(1)",
@@ -380,7 +380,7 @@ mod tests {
 
     fn api_json(url: &str) -> String {
         format!(
-            r#"{{"tag_name":"v0.5.0","name":"PhotoTool v0.5.0","html_url":"https://github.com/carlesllavata/phototool/releases/tag/v0.5.0",
+            r#"{{"tag_name":"v0.5.0","name":"PhotoTool v0.5.0","html_url":"https://github.com/Open3D-Suite/phototool/releases/tag/v0.5.0",
             "published_at":"2026-10-08T14:52:50Z","prerelease":false,"body":"Notes",
             "assets":[{{"name":"phototool-0.5.0-macos-universal.dmg","size":123,"browser_download_url":"{url}","digest":"sha256:{HASH}"}}]}}"#
         )
@@ -389,7 +389,7 @@ mod tests {
     #[test]
     fn reads_the_latest_release() {
         let r = parse_github_release(
-            &api_json("https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg"),
+            &api_json("https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg"),
             REPO,
         )
         .unwrap();
@@ -403,8 +403,7 @@ mod tests {
 
     #[test]
     fn drops_downloads_that_point_elsewhere() {
-        for url in ["https://evil.example/phototool.dmg", "https://github.com/carlesllavata/other/releases/download/v1/x.dmg", "javascript:alert(1)"]
-        {
+        for url in ["https://evil.example/phototool.dmg", "https://github.com/Open3D-Suite/other/releases/download/v1/x.dmg", "javascript:alert(1)"] {
             let r = parse_github_release(&api_json(url), REPO).unwrap();
             assert!(r.assets.is_empty(), "{url}");
         }
@@ -412,26 +411,36 @@ mod tests {
         assert!(parse_github_release("<html>", REPO).is_err());
     }
 
+    /// Asked about a repository's old address, GitHub redirects and answers with its downloads under
+    /// the new one. Those are not the asked repository's, so a launcher has to ask about the new one:
+    /// launchers before 0.5.0, asking about `carlesllavata/<App>`, found no download at all.
+    #[test]
+    fn downloads_under_a_moved_repositorys_new_owner_are_not_the_old_ones() {
+        let moved = "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg";
+        assert!(parse_github_release(&api_json(moved), "carlesllavata/phototool").unwrap().assets.is_empty());
+        assert_eq!(parse_github_release(&api_json(moved), REPO).unwrap().assets.len(), 1);
+    }
+
     #[test]
     fn release_html_url_rejects_traversal_and_metacharacters() {
-        let repo = "carlesllavata/phototool";
+        let repo = "Open3D-Suite/phototool";
         assert_eq!(
-            safe_release_html_url(repo, "https://github.com/carlesllavata/phototool/releases/tag/v1.0.0"),
-            Some("https://github.com/carlesllavata/phototool/releases/tag/v1.0.0".to_string())
+            safe_release_html_url(repo, "https://github.com/Open3D-Suite/phototool/releases/tag/v1.0.0"),
+            Some("https://github.com/Open3D-Suite/phototool/releases/tag/v1.0.0".to_string())
         );
         assert_eq!(
-            safe_release_html_url(repo, "https://github.com/carlesllavata/phototool/releases"),
-            Some("https://github.com/carlesllavata/phototool/releases".to_string())
+            safe_release_html_url(repo, "https://github.com/Open3D-Suite/phototool/releases"),
+            Some("https://github.com/Open3D-Suite/phototool/releases".to_string())
         );
         for bad in [
-            "https://github.com/carlesllavata/phototool/releases/../../attacker/repo/releases/tag/v1",
-            "https://github.com/carlesllavata/phototool/releases/tag/v1/../../../attacker/repo",
-            "https://github.com/carlesllavata/phototool/releases/tag/v1|calc.exe",
-            "https://github.com/carlesllavata/phototool/releases/tag/v1%2f..%2f..",
-            "https://github.com/carlesllavata/phototool/releases/tag/v1?x=1",
-            "https://github.com/carlesllavata/phototool/releases/tag/v1#hash",
-            "https://github.com/carlesllavata/other/releases/tag/v1.0.0",
-            "http://github.com/carlesllavata/phototool/releases/tag/v1",
+            "https://github.com/Open3D-Suite/phototool/releases/../../attacker/repo/releases/tag/v1",
+            "https://github.com/Open3D-Suite/phototool/releases/tag/v1/../../../attacker/repo",
+            "https://github.com/Open3D-Suite/phototool/releases/tag/v1|calc.exe",
+            "https://github.com/Open3D-Suite/phototool/releases/tag/v1%2f..%2f..",
+            "https://github.com/Open3D-Suite/phototool/releases/tag/v1?x=1",
+            "https://github.com/Open3D-Suite/phototool/releases/tag/v1#hash",
+            "https://github.com/Open3D-Suite/other/releases/tag/v1.0.0",
+            "http://github.com/Open3D-Suite/phototool/releases/tag/v1",
         ] {
             assert!(safe_release_html_url(repo, bad).is_none(), "should reject: {bad}");
         }
@@ -439,7 +448,7 @@ mod tests {
 
     #[test]
     fn selected_release_cannot_download_an_asset_from_a_different_tag() {
-        let wrong_tag = "https://github.com/carlesllavata/phototool/releases/download/v9.0.0/phototool-0.5.0-macos-universal.dmg";
+        let wrong_tag = "https://github.com/Open3D-Suite/phototool/releases/download/v9.0.0/phototool-0.5.0-macos-universal.dmg";
         let r = parse_github_release(&api_json(wrong_tag), REPO).unwrap();
         assert!(r.assets.is_empty());
     }
@@ -448,12 +457,12 @@ mod tests {
     fn traversal_cannot_escape_the_repository() {
         // Raw-prefix matches but the interpreted path climbs into another repository (CWE-180).
         for url in [
-            "https://github.com/carlesllavata/phototool/releases/download/../../../../attacker/repo/releases/download/v99/phototool-99.0.0-linux-x86_64.AppImage",
-            "https://github.com/carlesllavata/phototool/releases/download/v1/../../../attacker/repo/x.dmg",
-            "https://github.com/carlesllavata/phototool/releases/download/./v1/x.dmg",
-            "https://github.com/carlesllavata/phototool/releases/download/v1/sub/x.dmg",
-            "https://github.com/carlesllavata/phototool/releases/download/v1%2f..%2f..%2fx.dmg",
-            "https://github.com/carlesllavata/phototool/releases/download/v1/x%2fy.dmg",
+            "https://github.com/Open3D-Suite/phototool/releases/download/../../../../attacker/repo/releases/download/v99/phototool-99.0.0-linux-x86_64.AppImage",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v1/../../../attacker/repo/x.dmg",
+            "https://github.com/Open3D-Suite/phototool/releases/download/./v1/x.dmg",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v1/sub/x.dmg",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v1%2f..%2f..%2fx.dmg",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v1/x%2fy.dmg",
         ] {
             let prefix = download_prefix(REPO);
             assert!(!download_url_under(url, &prefix), "{url}");
@@ -463,7 +472,7 @@ mod tests {
         // A plain, confined download still passes.
         let prefix = download_prefix(REPO);
         assert!(download_url_under(
-            "https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg",
             &prefix
         ));
     }
@@ -532,11 +541,11 @@ mod tests {
     fn reads_checksums_and_redirects() {
         let sums = parse_sha256sums(&format!("{HASH}  phototool-0.5.0-macos-universal.dmg\n{HASH} *b.zip\nnot a line\n{HASH}  ../escape\n"));
         assert_eq!(sums, [(HASH.to_string(), "phototool-0.5.0-macos-universal.dmg".to_string()), (HASH.to_string(), "b.zip".to_string())]);
-        assert_eq!(tag_from_redirect("https://github.com/carlesllavata/phototool/releases/tag/v0.5.0", REPO).as_deref(), Some("v0.5.0"));
-        assert_eq!(tag_from_redirect("https://github.com/carlesllavata/phototool/releases", REPO), None);
-        assert_eq!(tag_from_redirect("https://evil/carlesllavata/phototool/releases/tag/v1", REPO), None);
+        assert_eq!(tag_from_redirect("https://github.com/Open3D-Suite/phototool/releases/tag/v0.5.0", REPO).as_deref(), Some("v0.5.0"));
+        assert_eq!(tag_from_redirect("https://github.com/Open3D-Suite/phototool/releases", REPO), None);
+        assert_eq!(tag_from_redirect("https://evil/Open3D-Suite/phototool/releases/tag/v1", REPO), None);
         let r = release_from_sums(REPO, "v0.5.0", &sums);
-        assert_eq!(r.assets[0].url, "https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg");
+        assert_eq!(r.assets[0].url, "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg");
         assert_eq!(r.version, Some(Version::new(0, 5, 0)));
     }
 

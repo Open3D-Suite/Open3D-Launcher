@@ -35,7 +35,7 @@ fn the_remote_agents_refuse_plain_http() {
     let (base, seen) = serve();
     let http = Http::new("craft-update-tests/0").unwrap();
     // `get_api` and `redirect_target` always use the agents for remote hosts.
-    let api = http.get_api(&format!("{base}/repos/carlesllavata/x/releases"), None);
+    let api = http.get_api(&format!("{base}/repos/Open3D-Suite/x/releases"), None);
     let redirect = http.redirect_target(&format!("{base}/releases/latest"));
     assert!(api.as_ref().is_err_and(|e| e.contains("refused plain HTTP")), "{api:?}");
     assert!(!matches!(api, Ok(Fetched::Body { .. })));

@@ -614,7 +614,7 @@ pub(crate) mod tests {
 
     #[test]
     fn host_is_what_follows_the_scheme() {
-        assert_eq!(host("https://api.github.com/repos/carlesllavata/wordtool"), "api.github.com");
+        assert_eq!(host("https://api.github.com/repos/Open3D-Suite/wordtool"), "api.github.com");
         assert_eq!(host("http://127.0.0.1:8080"), "127.0.0.1:8080");
         assert_eq!(host("not a url"), "not a url");
         assert_eq!(host("http://objects.example.com?X-Amz-Signature=abc"), "objects.example.com");
@@ -898,7 +898,7 @@ pub(crate) mod tests {
     /// Answers one request with `head` (status line and headers) and an empty body.
     fn answer_once(head: String) -> String {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let url = format!("http://{}/repos/carlesllavata/phototool/releases/latest", listener.local_addr().unwrap());
+        let url = format!("http://{}/repos/Open3D-Suite/phototool/releases/latest", listener.local_addr().unwrap());
         std::thread::spawn(move || {
             let Ok((mut stream, _)) = listener.accept() else { return };
             let mut reader = BufReader::new(stream.try_clone().unwrap());

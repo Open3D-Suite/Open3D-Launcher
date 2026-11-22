@@ -42,7 +42,7 @@ run = ["cargo", "test", "--workspace", "--locked"]
 
 # The signed catalog that installed launchers read from this repository's main branch on GitHub:
 # it needs the network. http::tests::downloads_a_real_release_asset is not here: the repository
-# it reads, carlesllavata/wordtool, does not exist.
+# it reads, Open3D-Suite/wordtool, does not exist.
 [[check]]
 name = "cargo test live catalog"
 run = ["cargo", "test", "-p", "open3d-launcher-native", "--lib", "--locked", "--", "--ignored", "--exact", "hosted_catalog::tests::live_catalog_is_verified_cached_and_activated"]

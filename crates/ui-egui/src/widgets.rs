@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Small building blocks in github.com/carlesllavata/Open3D's style: mono labels, square buttons, badges and
+//! Small building blocks in github.com/Open3D-Suite/Open3D-Launcher's style: mono labels, square buttons, badges and
 //! hairline cell groups.
 //!
 //! Upper-case text is drawn upper case but announced to screen readers as written.
@@ -919,16 +919,16 @@ mod tests {
     #[test]
     fn external_openers_refuse_hostile_urls() {
         let ctx = egui::Context::default();
-        let release_asset = "https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg";
+        let release_asset = "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool-0.5.0-macos-universal.dmg";
         open_external_link(&ctx, release_asset);
         assert_eq!(opened_urls(&ctx), vec![release_asset.to_string()]);
 
         ctx.output_mut(|out| out.commands.clear());
         for hostile in [
-            "https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool.dmg|calc.exe",
-            "https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool.dmg&whoami",
-            "https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool.dmg`id`",
-            "https://github.com/carlesllavata/phototool/releases/download/v0.5.0/phototool.dmg\nnext",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool.dmg|calc.exe",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool.dmg&whoami",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool.dmg`id`",
+            "https://github.com/Open3D-Suite/phototool/releases/download/v0.5.0/phototool.dmg\nnext",
             "https://user@evil.example/phototool.dmg",
             "https:///path",
             "javascript:alert(1)",
