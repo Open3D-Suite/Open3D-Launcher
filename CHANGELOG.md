@@ -2,15 +2,18 @@
 
 What each version of the Open3D Launcher adds, newest first.
 
-## In development
+## 0.5.0 — 22 November 2026
 
-- **Open3D moved to the [Open3D-Suite](https://github.com/Open3D-Suite) organization on GitHub,** and the
-  launcher's repository is now
-  [Open3D-Suite/Open3D-Launcher](https://github.com/Open3D-Suite/Open3D-Launcher). The launcher looks for
-  every app's releases there, and for its own, and its Website, GitHub, releases and help links point
-  there, as do the links of its entry in Windows' installed apps. Older launchers can no longer install or update anything, themselves included: GitHub now names
-  every download under Open3D-Suite, and they only take downloads from the old address. Install this
-  version by hand from the [latest release](https://github.com/Open3D-Suite/Open3D-Launcher/releases/latest).
+- **Install this version by hand.** Open3D moved to the [Open3D-Suite](https://github.com/Open3D-Suite)
+  organization on GitHub, and launchers up to 0.4.0 can no longer install or update anything, themselves
+  included: GitHub now names every download under Open3D-Suite, and they only take downloads from the old
+  address. Your installed apps keep working. Download the MSI from the
+  [latest release](https://github.com/Open3D-Suite/Open3D-Launcher/releases/latest) and run it: it replaces
+  the old launcher and keeps your settings.
+- **The launcher's repository is now
+  [Open3D-Suite/Open3D-Launcher](https://github.com/Open3D-Suite/Open3D-Launcher).** The launcher looks
+  for every app's releases in the organization, and for its own, and its Website, GitHub, releases and help
+  links point there, as do the links of its entry in Windows' installed apps.
 - **An app's page and the README say which 3ds Max versions each app was tested on,** and which should work
   but are not tested.
 - **The Platforms box of an app's page is in Spanish too** when the launcher is; it was always in English.
