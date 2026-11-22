@@ -64,6 +64,8 @@ as a change that makes it old.
 
 ## Rules of this code
 
+- A bug that is fixed comes with a test that fails without the fix, and new logic comes with its tests. The
+  interface is tried by hand before a release.
 - A 3ds Max app's `<App>.bundle` comes from `<id>-<ver>-windows-x64-3dsmax.zip` into
   `%APPDATA%\Autodesk\ApplicationPlugins`. A program comes from its per-machine `<id>-<ver>-windows-x64.msi`
   when the release has one (`msi.rs`: one `msiexec` at a time, started normally so Windows asks; found by
