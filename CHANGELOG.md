@@ -8,7 +8,7 @@ What each version of the Open3D Launcher adds, newest first.
   launcher's repository is now
   [Open3D-Suite/Open3D-Launcher](https://github.com/Open3D-Suite/Open3D-Launcher). The launcher looks for
   every app's releases there, and for its own, and its Website, GitHub, releases and help links point
-  there. Older launchers can no longer install or update anything, themselves included: GitHub now names
+  there, as do the links of its entry in Windows' installed apps. Older launchers can no longer install or update anything, themselves included: GitHub now names
   every download under Open3D-Suite, and they only take downloads from the old address. Install this
   version by hand from the [latest release](https://github.com/Open3D-Suite/Open3D-Launcher/releases/latest).
 - **An app's page and the README say which 3ds Max versions each app was tested on,** and which should work

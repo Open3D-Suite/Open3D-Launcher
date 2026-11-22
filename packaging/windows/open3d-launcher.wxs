@@ -58,9 +58,9 @@
          (build.rs embeds it), at a path every update keeps. -->
     <Icon Id="Open3DLauncherIcon.exe" SourceFile="$(var.IconPath)" />
     <Property Id="ARPPRODUCTICON" Value="Open3DLauncherIcon.exe" />
-    <Property Id="ARPURLINFOABOUT" Value="https://github.com/carlesllavata/Open3D" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/carlesllavata/Open3D/releases" />
-    <Property Id="ARPHELPLINK" Value="https://github.com/carlesllavata/Open3D/issues" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Open3D-Suite/Open3D-Launcher" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Open3D-Suite/Open3D-Launcher/releases" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Open3D-Suite/Open3D-Launcher/issues" />
 
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="LocalProgramsFolder" Name="Programs">

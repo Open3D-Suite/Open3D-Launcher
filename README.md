@@ -38,7 +38,7 @@ Requirements: Windows 10 or 11 (64-bit). For what runs inside 3ds Max:
 
 ## Download and install
 
-From the [latest release](https://github.com/carlesllavata/Open3D/releases/latest) download one of:
+From the [latest release](https://github.com/Open3D-Suite/Open3D-Launcher/releases/latest) download one of:
 
 - `open3d-launcher-<version>-windows-x64.msi`: the installer. It installs for you only, without
   administrator rights, in `%LOCALAPPDATA%\Programs\Open3D\Launcher`, with a Start menu shortcut and, if you
@@ -60,30 +60,30 @@ its settings and data*; removing a 3ds Max app keeps its settings.
 ### Apps
 
 - **OpenTools**: a tool hub for 3ds Max (scene checks and repairs, asset / proxy / XRef managers, rendering
-  only the render elements you choose, modeling, material and clipboard tools). [carlesllavata/OpenTools](https://github.com/carlesllavata/OpenTools)
+  only the render elements you choose, modeling, material and clipboard tools). [Open3D-Suite/OpenTools](https://github.com/Open3D-Suite/OpenTools)
 
 - **OpenManager**: scene setups and batch rendering for 3ds Max (Corona and V-Ray; reads Pulze Scene Manager
-  setups). [carlesllavata/OpenManager](https://github.com/carlesllavata/OpenManager)
+  setups). [Open3D-Suite/OpenManager](https://github.com/Open3D-Suite/OpenManager)
 
 - **OpenView**: downloads 360 panoramas and photos from map applications at full resolution, with a 360
   viewer, crops and HDRIs. A program of its own: it doesn't need 3ds Max.
-  [carlesllavata/OpenView](https://github.com/carlesllavata/OpenView)
+  [Open3D-Suite/OpenView](https://github.com/Open3D-Suite/OpenView)
 
 - **OpenGaussian**: trains, views, edits and exports 3D Gaussian Splatting scenes from your photos, based on
   LichtFeld Studio. A program of its own; it needs an NVIDIA graphics card (GTX 16 or RTX 20 series or newer).
-  [carlesllavata/OpenGaussian](https://github.com/carlesllavata/OpenGaussian)
+  [Open3D-Suite/OpenGaussian](https://github.com/Open3D-Suite/OpenGaussian)
 
 - **OpenRef**: reference-image boards that float over 3ds Max or any other program: paste, crop, arrange
   and annotate images, see-through or letting the mouse through. A program of its own: it doesn't need
-  3ds Max. [carlesllavata/OpenRef](https://github.com/carlesllavata/OpenRef)
+  3ds Max. [Open3D-Suite/OpenRef](https://github.com/Open3D-Suite/OpenRef)
 
 - **OpenFarm**: a render farm for your own computers: send 3ds Max (Corona, V-Ray, V-Ray GPU, FStorm) and
   Blender (Cycles, Eevee) scenes to every machine of the studio. A program of its own, installed on every
-  computer of the farm. [carlesllavata/OpenFarm](https://github.com/carlesllavata/OpenFarm)
+  computer of the farm. [Open3D-Suite/OpenFarm](https://github.com/Open3D-Suite/OpenFarm)
 
 - **OpenScatter**: a scatter for 3ds Max 2027: one object that places millions of render-time instances of
   your models on surfaces (tested in Arnold and Corona, not yet in V-Ray). An early version, with no
-  interface yet. [carlesllavata/OpenScatter](https://github.com/carlesllavata/OpenScatter)
+  interface yet. [Open3D-Suite/OpenScatter](https://github.com/Open3D-Suite/OpenScatter)
 
 More apps are added to the catalog as they are published.
 
@@ -93,7 +93,7 @@ More apps are added to the catalog as they are published.
   reads `launcher-catalog.toml` from this repository's `main` branch, but only when its Ed25519 signature
   (`launcher-catalog.toml.sig`) matches the public key built into the launcher
   (`crates/core/assets/launcher-catalog-public-key.pem`); otherwise it keeps the built-in list.
-- **Versions.** Each app lives in its own public repository (`carlesllavata/<App>`), and each release tagged
+- **Versions.** Each app lives in its own public repository (`Open3D-Suite/<App>`), and each release tagged
   `vX.Y.Z` carries the app's package and `SHA256SUMS.txt`. The launcher asks GitHub for the latest release,
   at most once an hour unless you press *Check for updates*.
 - **3ds Max apps.** The package is `<id>-<version>-windows-x64-3dsmax.zip`, with the `.bundle` folder at the

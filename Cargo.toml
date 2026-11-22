@@ -10,7 +10,7 @@ version = "0.4.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 rust-version = "1.95"
-repository = "https://github.com/carlesllavata/Open3D"
+repository = "https://github.com/Open3D-Suite/Open3D-Launcher"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
