@@ -4,6 +4,12 @@ What each version of the Open3D Launcher adds, newest first.
 
 ## In development
 
+- **Open3D moved to the [Open3D-Suite](https://github.com/Open3D-Suite) organization on GitHub.** The
+  launcher looks for every app's releases there, and for its own, and its Website, GitHub, releases and
+  help links point there. Older launchers can no longer install or update anything, themselves included:
+  GitHub now names every download under Open3D-Suite, and they only take downloads from the old address.
+  Install this version by hand from the
+  [latest release](https://github.com/Open3D-Suite/Open3D/releases/latest).
 - **An app's page and the README say which 3ds Max versions each app was tested on,** and which should work
   but are not tested.
 - **The Platforms box of an app's page is in Spanish too** when the launcher is; it was always in English.

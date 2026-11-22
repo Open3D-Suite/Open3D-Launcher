@@ -76,7 +76,10 @@ as a change that makes it old.
 - No plug-in is changed while a `3dsmax.exe` runs, batch and farm renders included, no program while a
   copy of it runs (`running.rs`; it can ask OpenFarm to quit). Old copies wait in `.open3d-<id>` till replaced.
 - The hosted catalog counts only if its signature matches the built-in public key; the private key is not
-  in the repo. It can add apps, but not change the name, repo, package or exe of a built-in one.
+  in the repo. It can add apps, but not change the name, repo, package or exe of a built-in one. The apps
+  live under `catalog::GITHUB_OWNER` (`Open3D-Suite`); a built-in app's repo, an icon or a site it names
+  under `FORMER_GITHUB_OWNER` (`carlesllavata`) is read as the same under `Open3D-Suite`
+  (`hosted_catalog::under_current_owner`). A new app must be `Open3D-Suite/<id>`.
 - Interface texts are English in the code (`t`, `tl!`, `tn`), with their Spanish in `es.tsv`. The test for
   missing rows reads a fixed list of files; `versions.rs` and `theme.rs` are not on it.
 - Its own files (`apps/open3d-launcher/src/folders.rs`, the `paths.rs` of `crates/native` and
@@ -107,6 +110,9 @@ as a change that makes it old.
   published on GitHub. Its exit code is 0 too when it stops to wait for a push.
 - `publish.py launcher` builds twice, before the push and after it: the release carries the second build.
 - Installed launchers read the signed catalog from this repo's `main` branch at every start.
+- Launchers before 0.5.0 take a catalog entry only with its repo and icon under `carlesllavata`, and the
+  signed `launcher-catalog.toml` names them there. `crates/core/catalog.toml` names `Open3D-Suite`, so
+  what `publish.py catalog` signs from it, those launchers refuse whole: they keep their saved copy.
 - Adding an app: its entry in `crates/core/catalog.toml`, `assets/app-icons/<id>.png` and its line in
   `catalog::app_icon_png`, its `es.tsv` rows, and the catalog signed again. `publish.py catalog` does not
   update the copy in `crates/core/tests/fixtures/`, which a test checks.

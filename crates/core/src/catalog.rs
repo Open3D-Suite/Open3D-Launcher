@@ -54,7 +54,7 @@ pub struct SuiteApp {
     pub name: &'static str,
     /// What it's for, in a few words (English; the UI translates it by app id).
     pub tagline: &'static str,
-    /// Brand colour (sRGB), for surfaces: github.com/carlesllavata/Open3D's `--app`.
+    /// Brand colour (sRGB), for surfaces: github.com/Open3D-Suite/Open3D's `--app`.
     pub color: [u8; 3],
     /// The brand colour for text on a light background (the site's light `--app-ink`).
     pub ink_light: [u8; 3],
@@ -78,7 +78,8 @@ pub struct SuiteApp {
     pub bundle: Option<&'static str>,
     /// Older bundle ids its Flatpak shipped under (SolidTool was `io.github.carlesllavata.solidtool`).
     pub former_bundles: &'static [&'static str],
-    /// Its website, when it isn't a page on github.com/carlesllavata/Open3D (a community app has its own).
+    /// Its website, when it isn't its repository's page under github.com/Open3D-Suite (a community app
+    /// has its own).
     pub site: Option<&'static str>,
     /// The Apple Developer team whose Developer ID signature its macOS build must carry. `None`
     /// while those builds carry no signature the launcher can check: it then opens a copy that's
@@ -121,9 +122,9 @@ impl SuiteApp {
         format!("https://github.com/{}", self.repo)
     }
 
-    /// The app's website: its page on github.com/carlesllavata/Open3D, or a community app's own site.
+    /// The app's website: its repository's page under github.com/Open3D-Suite, or a community app's own site.
     pub fn website(&self) -> String {
-        self.site.map_or_else(|| format!("https://github.com/carlesllavata/{}", self.id), str::to_string)
+        self.site.map_or_else(|| format!("https://github.com/{GITHUB_OWNER}/{}", self.id), str::to_string)
     }
 
     /// Asset stems this app's releases may use, current first.
@@ -180,18 +181,22 @@ const fn app(
 include!(concat!(env!("OUT_DIR"), "/catalog.rs"));
 
 /// Open3D's home page: the launcher's public repository.
-pub const WEBSITE_URL: &str = "https://github.com/carlesllavata/Open3D";
-/// The GitHub account every official Open3D app's repository lives under. The release feed can
+pub const WEBSITE_URL: &str = "https://github.com/Open3D-Suite/Open3D";
+/// The GitHub organization every official Open3D app's repository lives under. The release feed can
 /// only move an app within it.
-pub const GITHUB_OWNER: &str = "carlesllavata";
+pub const GITHUB_OWNER: &str = "Open3D-Suite";
+/// The GitHub account the official apps lived under before [`GITHUB_OWNER`]. Launchers before 0.5.0
+/// accept no other, so a signed catalog they can read names it: `hosted_catalog` reads its built-in
+/// apps as the same repositories under [`GITHUB_OWNER`].
+pub const FORMER_GITHUB_OWNER: &str = "carlesllavata";
 /// Open3D on GitHub: every Open3D app's source.
-pub const GITHUB_URL: &str = "https://github.com/carlesllavata";
+pub const GITHUB_URL: &str = "https://github.com/Open3D-Suite";
 /// Social accounts (service, URL), shown as small icons. Open3D has none.
 pub const SOCIAL: [(&str, &str); 0] = [];
 
 /// Where to ask for help and report problems: the
 /// launcher repository's issues.
-pub const COMMUNITY_URL: &str = "https://github.com/carlesllavata/Open3D/issues";
+pub const COMMUNITY_URL: &str = "https://github.com/Open3D-Suite/Open3D/issues";
 
 /// Open3D Launcher itself, described like an Open3D app so it can update itself with the same
 /// machinery (asset names `open3d-launcher-<ver>-…`). Not part of [`SUITE`].
@@ -200,7 +205,7 @@ pub const LAUNCHER: SuiteApp = app(
     "Open3D Launcher",
     "Installs and updates the Open3D apps for 3ds Max",
     [[0x24, 0x26, 0x2b], [0x24, 0x26, 0x2b], [0xff, 0x8c, 0x1a]],
-    "carlesllavata/Open3D",
+    "Open3D-Suite/Open3D",
 );
 
 /// The launcher's own asset stem.
@@ -251,18 +256,33 @@ mod tests {
         let standalone: Vec<&str> = SUITE.iter().filter(|a| a.is_standalone()).map(|a| a.id).collect();
         assert_eq!(standalone, ["openview", "opengaussian", "openref", "openfarm"]);
         let openview = SUITE.iter().find(|a| a.id == "openview").unwrap();
-        assert_eq!((openview.name, openview.repo), ("OpenView", "carlesllavata/OpenView"));
+        assert_eq!((openview.name, openview.repo), ("OpenView", "Open3D-Suite/OpenView"));
         assert_eq!(openview.kinds(), [crate::PackageKind::Msi, crate::PackageKind::AppZip]);
         assert_eq!(openview.exe_relative(), "OpenView.exe");
         let opengaussian = SUITE.iter().find(|a| a.id == "opengaussian").unwrap();
-        assert_eq!((opengaussian.name, opengaussian.repo), ("OpenGaussian", "carlesllavata/OpenGaussian"));
+        assert_eq!((opengaussian.name, opengaussian.repo), ("OpenGaussian", "Open3D-Suite/OpenGaussian"));
         assert_eq!(opengaussian.exe_relative(), "bin/OpenGaussian.exe");
         let openref = SUITE.iter().find(|a| a.id == "openref").unwrap();
-        assert_eq!((openref.name, openref.repo), ("OpenRef", "carlesllavata/OpenRef"));
+        assert_eq!((openref.name, openref.repo), ("OpenRef", "Open3D-Suite/OpenRef"));
         assert_eq!(openref.exe_relative(), "OpenRef.exe");
         let openfarm = SUITE.iter().find(|a| a.id == "openfarm").unwrap();
-        assert_eq!((openfarm.name, openfarm.repo), ("OpenFarm", "carlesllavata/OpenFarm"));
+        assert_eq!((openfarm.name, openfarm.repo), ("OpenFarm", "Open3D-Suite/OpenFarm"));
         assert_eq!(openfarm.exe_relative(), "OpenFarm.exe");
+    }
+
+    /// The apps moved from `carlesllavata` to the Open3D-Suite organization: every repository,
+    /// link and icon of the built-in catalog is there, and the launcher's own releases too.
+    #[test]
+    fn every_official_app_and_the_launcher_live_under_open3d_suite() {
+        for app in SUITE.iter().chain([&LAUNCHER]) {
+            assert_eq!(app.repo.split_once('/').map(|(owner, _)| owner), Some(GITHUB_OWNER), "{}", app.id);
+            assert!(app.website().starts_with("https://github.com/Open3D-Suite/"), "{}", app.id);
+        }
+        for url in [WEBSITE_URL, GITHUB_URL, COMMUNITY_URL] {
+            assert!(url.starts_with("https://github.com/Open3D-Suite"), "{url}");
+        }
+        let catalog = include_str!("../catalog.toml");
+        assert!(!catalog.contains(FORMER_GITHUB_OWNER), "the built-in catalog still names {FORMER_GITHUB_OWNER}");
     }
 
     #[test]

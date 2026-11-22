@@ -109,7 +109,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "requires the live signed catalog at github.com/carlesllavata/Open3D"]
+    #[ignore = "requires the live signed catalog at github.com/Open3D-Suite/Open3D"]
     fn live_catalog_is_verified_cached_and_activated() {
         let dir = tempfile::tempdir().unwrap();
         let paths = Paths::under(dir.path());

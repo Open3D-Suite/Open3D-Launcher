@@ -833,6 +833,27 @@ pub(crate) mod tests {
         (result, seen)
     }
 
+    /// The catalog, its signature and the icons come from Open3D-Suite's repository only, the place
+    /// the signed catalog's own URLs are read as (`hosted_catalog`), never from the address it had.
+    #[test]
+    fn catalog_resources_come_only_from_the_pinned_origin() {
+        use open3d_launcher_core::hosted_catalog::{CATALOG_ORIGIN, CATALOG_URL, FORMER_ICON_BASE_URL, ICON_BASE_URL, SIGNATURE_URL};
+        assert_eq!(CATALOG_ORIGIN, "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/");
+        for url in [CATALOG_URL, SIGNATURE_URL, ICON_BASE_URL] {
+            assert!(url.starts_with(CATALOG_ORIGIN), "{url}");
+        }
+        let http = Http::new().unwrap();
+        // Refused before any request is made: these never reach the network.
+        for url in [
+            format!("{FORMER_ICON_BASE_URL}openfarm.png"),
+            "https://raw.githubusercontent.com/carlesllavata/Open3D/main/launcher-catalog.toml".to_string(),
+            format!("{CATALOG_ORIGIN}launcher-app-icons/../../other/x.png"),
+        ] {
+            let err = http.get_catalog_bytes(&url, 16).unwrap_err();
+            assert!(err.contains("pinned HTTPS website"), "{url}: {err}");
+        }
+    }
+
     #[test]
     fn small_binary_files_are_read_whole_and_a_404_is_none() {
         let (body, _) = body();

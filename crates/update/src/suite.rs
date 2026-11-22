@@ -8,14 +8,14 @@
 
 use crate::app::App;
 
-pub const OPENTOOLS: App = App::new("opentools", "OpenTools", "Tool hub for 3ds Max", "carlesllavata/OpenTools");
+pub const OPENTOOLS: App = App::new("opentools", "OpenTools", "Tool hub for 3ds Max", "Open3D-Suite/OpenTools");
 
 /// Open3D Launcher, described like an Open3D app so it updates itself with the same machinery
 /// (asset names `open3d-launcher-<ver>-…`). Not part of [`SUITE`]. Its folders are
 /// `%APPDATA%\Open3D\Launcher` and `%LOCALAPPDATA%\Open3D\Launcher`.
 pub const LAUNCHER: App = App {
     folder: "Launcher",
-    ..App::new("open3d-launcher", "Open3D Launcher", "Installs and updates the Open3D apps for 3ds Max", "carlesllavata/Open3D")
+    ..App::new("open3d-launcher", "Open3D Launcher", "Installs and updates the Open3D apps for 3ds Max", "Open3D-Suite/Open3D")
 };
 
 /// The Open3D suite.

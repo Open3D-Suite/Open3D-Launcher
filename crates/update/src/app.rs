@@ -51,9 +51,9 @@ impl App {
         format!("https://github.com/{}", self.repo)
     }
 
-    /// The app's page on github.com/carlesllavata/Open3D.
+    /// The app's page: its repository under github.com/Open3D-Suite.
     pub fn website(&self) -> String {
-        format!("https://github.com/carlesllavata/{}", self.id)
+        format!("https://github.com/Open3D-Suite/{}", self.id)
     }
 
     /// Asset stems this app's releases may use, current first.
@@ -78,10 +78,20 @@ mod tests {
 
     #[test]
     fn former_names_follow_the_current_one() {
-        let pdf = App { former_ids: &["printtool"], former_names: &["PrintTool"], ..App::new("pdftool", "PdfTool", "PDFs", "carlesllavata/pdftool") };
+        let pdf = App { former_ids: &["printtool"], former_names: &["PrintTool"], ..App::new("pdftool", "PdfTool", "PDFs", "Open3D-Suite/pdftool") };
         assert_eq!(pdf.stems().collect::<Vec<_>>(), ["pdftool", "printtool"]);
         assert_eq!(pdf.names().collect::<Vec<_>>(), ["PdfTool", "PrintTool"]);
+        // An identity, not an address: it stays what it was when the apps moved to Open3D-Suite.
         assert_eq!(pdf.bundle_id(), "io.github.carlesllavata.pdftool");
-        assert_eq!(pdf.releases_url(), "https://github.com/carlesllavata/pdftool/releases");
+        assert_eq!(pdf.releases_url(), "https://github.com/Open3D-Suite/pdftool/releases");
+        assert_eq!(pdf.website(), "https://github.com/Open3D-Suite/pdftool");
+    }
+
+    /// The launcher's own releases, and OpenTools', are in the Open3D-Suite organization.
+    #[test]
+    fn the_suite_lives_under_open3d_suite() {
+        for app in crate::suite::SUITE.iter().chain([&crate::suite::LAUNCHER]) {
+            assert!(app.repo.starts_with("Open3D-Suite/"), "{}", app.id);
+        }
     }
 }

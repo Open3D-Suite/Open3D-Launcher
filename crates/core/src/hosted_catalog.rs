@@ -13,16 +13,19 @@ use ed25519_dalek::{Signature, VerifyingKey, pkcs8::DecodePublicKey};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
-use crate::catalog::{AppKind, AppPackage, SUITE, SuiteApp};
+use crate::catalog::{AppKind, AppPackage, FORMER_GITHUB_OWNER, GITHUB_OWNER, SUITE, SuiteApp};
 use crate::details::{AppDetails, Feature, Shot};
 
 /// The one origin catalog resources (the catalog, its signature, the app icons) may come from:
 /// this repository's `main` branch, served by GitHub.
-pub const CATALOG_ORIGIN: &str = "https://raw.githubusercontent.com/carlesllavata/Open3D/main/";
-pub const CATALOG_URL: &str = "https://raw.githubusercontent.com/carlesllavata/Open3D/main/launcher-catalog.toml";
-pub const SIGNATURE_URL: &str = "https://raw.githubusercontent.com/carlesllavata/Open3D/main/launcher-catalog.toml.sig";
+pub const CATALOG_ORIGIN: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/";
+pub const CATALOG_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/launcher-catalog.toml";
+pub const SIGNATURE_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/launcher-catalog.toml.sig";
 /// Where the catalog's app icons are published (`<id>-<sha256>.png`).
-pub const ICON_BASE_URL: &str = "https://raw.githubusercontent.com/carlesllavata/Open3D/main/launcher-app-icons/";
+pub const ICON_BASE_URL: &str = "https://raw.githubusercontent.com/Open3D-Suite/Open3D/main/launcher-app-icons/";
+/// The same folder while this repository lived under [`FORMER_GITHUB_OWNER`]. A catalog that
+/// launchers before 0.5.0 can read names its icons there; they are fetched from [`ICON_BASE_URL`].
+pub const FORMER_ICON_BASE_URL: &str = "https://raw.githubusercontent.com/carlesllavata/Open3D/main/launcher-app-icons/";
 pub const PUBLIC_KEY_PEM: &str = include_str!("../assets/launcher-catalog-public-key.pem");
 pub const MAX_CATALOG_BYTES: usize = 1 << 20;
 pub const MAX_SIGNATURE_BYTES: usize = 128;
@@ -156,7 +159,7 @@ impl VerifiedCatalog {
                 rejected_entries += 1;
                 continue;
             }
-            records.push(record);
+            records.push(under_current_owner(record));
         }
         if records.is_empty() {
             return Err("catalog has no acceptable apps".into());
@@ -301,7 +304,7 @@ fn valid_record(r: &Record) -> bool {
     // A signature cannot expand the compiled community allowlist or change existing install
     // identities. These checks keep native detection/uninstall and publisher verification pinned.
     if let Some(pinned) = SUITE.iter().find(|a| a.id == r.id) {
-        if r.repo != pinned.repo
+        if !same_repository(&r.repo, pinned.repo)
             || (r.kind == "official") != (pinned.kind == AppKind::Official)
             || r.publisher != pinned.publisher
             || r.msi_publisher.as_deref() != pinned.msi_publisher
@@ -318,7 +321,8 @@ fn valid_record(r: &Record) -> bool {
             return false;
         }
     } else if r.kind != "official"
-        || !r.repo.eq_ignore_ascii_case(&format!("{}/{}", crate::catalog::GITHUB_OWNER, r.id))
+        // A new app lives under the organization: never under the account the apps moved from.
+        || !r.repo.eq_ignore_ascii_case(&format!("{GITHUB_OWNER}/{}", r.id))
         || r.publisher != "Open3D"
         || r.msi_publisher.as_deref().is_some_and(|publisher| publisher != "Open3D")
         || r.bundle.is_some()
@@ -342,7 +346,7 @@ fn valid_record(r: &Record) -> bool {
     }
     if r.icon_sha256.len() != 64
         || !r.icon_sha256.bytes().all(|c| c.is_ascii_hexdigit())
-        || r.icon_url != format!("{ICON_BASE_URL}{}-{}.png", r.id, r.icon_sha256)
+        || ![ICON_BASE_URL, FORMER_ICON_BASE_URL].iter().any(|base| r.icon_url == format!("{base}{}-{}.png", r.id, r.icon_sha256))
     {
         return false;
     }
@@ -354,6 +358,29 @@ fn valid_record(r: &Record) -> bool {
                     && s.url == format!("{}/{}/{}/{}.jpg", crate::details::SCREENSHOTS_BASE, crate::details::SCREENSHOTS_REV, r.id, s.key)
             })
     })
+}
+
+/// Whether a signed catalog's `repo` is a built-in app's: the same, or the same repository under
+/// [`FORMER_GITHUB_OWNER`], which a catalog that launchers before 0.5.0 can read still names.
+fn same_repository(named: &str, pinned: &str) -> bool {
+    named == pinned || pinned.split_once('/').is_some_and(|(owner, name)| owner == GITHUB_OWNER && named == format!("{FORMER_GITHUB_OWNER}/{name}"))
+}
+
+/// An accepted record as this launcher uses it, whichever owner the catalog named: a built-in app's
+/// repository is the one it was built with, the icon comes from [`ICON_BASE_URL`], the only place
+/// `Http::get_catalog_bytes` fetches from, and a website on GitHub under [`FORMER_GITHUB_OWNER`] is
+/// the same page under [`GITHUB_OWNER`]. GitHub only redirects the old addresses, and its answers
+/// name the new ones: asked about the old repository, the release's downloads would not be its own.
+fn under_current_owner(mut r: Record) -> Record {
+    if let Some(pinned) = SUITE.iter().find(|a| a.id == r.id) {
+        r.repo = pinned.repo.to_string();
+    }
+    r.icon_url = format!("{ICON_BASE_URL}{}-{}.png", r.id, r.icon_sha256);
+    let former_pages = format!("https://github.com/{FORMER_GITHUB_OWNER}/");
+    if let Some(page) = r.site.as_deref().and_then(|site| site.strip_prefix(&former_pages)) {
+        r.site = Some(format!("https://github.com/{GITHUB_OWNER}/{page}"));
+    }
+    r
 }
 
 /// A name Windows takes as a file or folder name as it is.
@@ -419,6 +446,52 @@ mod tests {
             let bundled = SUITE.iter().find(|app| app.id == record.id).unwrap();
             assert_eq!(record.repo, bundled.repo);
         }
+    }
+
+    /// Launchers before 0.5.0 accept only repositories and icons under `carlesllavata`, where the
+    /// apps lived before the Open3D-Suite organization, so the signed catalog they read names them
+    /// there. This launcher reads it as it reads its own: the same repositories under Open3D-Suite,
+    /// whose release downloads GitHub now names, and the icons from the one origin it fetches from.
+    #[test]
+    fn a_catalog_naming_the_former_owner_is_read_under_open3d_suite() {
+        let built_in = std::str::from_utf8(BUNDLED).unwrap();
+        let former = built_in.replace(GITHUB_OWNER, FORMER_GITHUB_OWNER);
+        assert!(former.contains(&format!("repo = \"{FORMER_GITHUB_OWNER}/OpenTools\"")));
+        assert!(former.contains(FORMER_ICON_BASE_URL));
+        for (what, catalog) in
+            [("the published one", VerifiedCatalog::verify(WEBSITE, SIGNATURE)), ("the built-in one, renamed", signed(former.as_bytes()))]
+        {
+            let catalog = catalog.unwrap();
+            assert_eq!((catalog.records.len(), catalog.rejected_entries), (SUITE.len(), 0), "{what}");
+            for (id, url, digest) in catalog.icons() {
+                assert_eq!(url, format!("{ICON_BASE_URL}{id}-{digest}.png"), "{what}");
+                assert!(url.starts_with(CATALOG_ORIGIN), "{what}");
+            }
+            for record in &catalog.records {
+                let site = record.site.as_deref().unwrap_or_default();
+                assert!(site.starts_with("https://github.com/Open3D-Suite/"), "{what}: {site}");
+            }
+            let snapshot = catalog.into_snapshot(HashMap::new());
+            for app in &SUITE {
+                let read = snapshot.apps.iter().find(|a| a.id == app.id).unwrap();
+                assert_eq!(read.repo, app.repo, "{what}");
+                assert!(read.repo.starts_with("Open3D-Suite/"), "{what}");
+            }
+        }
+        // Only the same repository under the former owner: not another app's, nor another owner's.
+        let mut r = first_record();
+        r.repo = format!("{FORMER_GITHUB_OWNER}/OpenManager");
+        assert!(!valid_record(&r));
+        r.repo = "someone/OpenTools".into();
+        assert!(!valid_record(&r));
+        r = first_record();
+        r.icon_url = format!("https://raw.githubusercontent.com/someone/Open3D/main/launcher-app-icons/opentools-{}.png", r.icon_sha256);
+        assert!(!valid_record(&r));
+        // A new app lives under Open3D-Suite only.
+        r = future_app();
+        assert!(valid_record(&r));
+        r.repo = format!("{FORMER_GITHUB_OWNER}/exampletool");
+        assert!(!valid_record(&r));
     }
 
     #[test]
@@ -586,7 +659,7 @@ mod tests {
         let mut r = first_record();
         r.id = "exampletool".into();
         r.name = "ExampleTool".into();
-        r.repo = "carlesllavata/exampletool".into();
+        r.repo = format!("{GITHUB_OWNER}/exampletool");
         r.mac_bundle_name = Some(r.name.clone());
         r.startup_wm_class = "io.github.carlesllavata.exampletool".into();
         r.icon_url = format!("{ICON_BASE_URL}{}-{}.png", r.id, r.icon_sha256);
