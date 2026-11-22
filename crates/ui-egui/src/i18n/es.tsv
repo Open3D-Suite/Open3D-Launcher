@@ -335,8 +335,8 @@ column	Author	Autor
 opentools	Tool hub for 3ds Max	Centro de herramientas para 3ds Max
 opentools	Everyday 3ds Max tools in one install.	Las herramientas de 3ds Max de cada día, en una sola instalación.
 opentools	OpenTools gathers scene checks and repairs, asset, proxy and XRef managers, modeling, material and clipboard tools in one dockable panel, a searchable command palette and macros you can bind to hotkeys.	OpenTools reúne comprobaciones y reparaciones de escena, gestores de recursos, proxies y XRefs, y herramientas de modelado, materiales y portapapeles en un panel acoplable, una paleta de comandos con búsqueda y macros que puedes asignar a atajos de teclado.
-opentools	One package installs every tool, and every 3ds Max from 2025 on picks it up.	Un solo paquete instala todas las herramientas, y cualquier 3ds Max desde 2025 lo carga.
-opentools	Windows, 3ds Max 2025 and later	Windows, 3ds Max 2025 o posterior
+opentools	One package installs every tool. It is tested on 3ds Max 2027; 2025 and 2026 should work, but are not tested.	Un solo paquete instala todas las herramientas. Está probado en 3ds Max 2027; en 2025 y 2026 debería funcionar, pero no se ha probado.
+opentools	Windows, 3ds Max 2027 (tested), 2025 and 2026 (not tested)	Windows, 3ds Max 2027 (probado), 2025 y 2026 (sin probar)
 opentools	One panel	Un solo panel
 opentools	Every tool in a dockable panel with categories, favourites and search.	Todas las herramientas en un panel acoplable, con categorías, favoritos y búsqueda.
 opentools	Command palette	Paleta de comandos
@@ -349,7 +349,7 @@ openmanager	Scene setups and batch rendering for 3ds Max	Configuraciones de esce
 openmanager	Every shot of a scene, one click away.	Cada plano de la escena, a un clic.
 openmanager	OpenManager keeps setups inside your .max file: camera, resolution, frames, sun, dome, environment, layers, objects, lights, output path and render settings. Click a setup and the scene follows; Batch Render renders every ticked setup one after the other.	OpenManager guarda las configuraciones dentro de tu archivo .max: cámara, resolución, fotogramas, sol, domo, entorno, capas, objetos, luces, ruta de salida y ajustes de render. Haz clic en una configuración y la escena se ajusta; Batch Render renderiza una tras otra todas las configuraciones marcadas.
 openmanager	It works with Corona and V-Ray, and reads setups made with Pulze Scene Manager.	Funciona con Corona y V-Ray, y lee las configuraciones creadas con Pulze Scene Manager.
-openmanager	Windows, 3ds Max 2025 and later	Windows, 3ds Max 2025 o posterior
+openmanager	Windows, 3ds Max 2026.3 and 2027 (tested), 2025 (not tested)	Windows, 3ds Max 2026.3 y 2027 (probados), 2025 (sin probar)
 openmanager	Setups	Configuraciones
 openmanager	Camera, lights, layers, objects and render settings saved per shot, inside the .max file.	Cámara, luces, capas, objetos y ajustes de render guardados por plano, dentro del archivo .max.
 openmanager	Batch render	Render por lotes
@@ -414,7 +414,7 @@ openscatter	Scatter millions of instances in 3ds Max	Esparce millones de instanc
 openscatter	Grass, trees and stones by the million.	Hierba, árboles y piedras por millones.
 openscatter	OpenScatter is one object that places millions of copies of your models over the surfaces you choose and hands them to the renderer as real instances, without creating nodes. It is tested in Arnold and Corona; not yet in V-Ray.	OpenScatter es un objeto que reparte millones de copias de tus modelos sobre las superficies que elijas y se las entrega al motor de render como instancias reales, sin crear nodos. Está probado en Arnold y Corona; en V-Ray, todavía no.
 openscatter	This is an early version: it has no interface yet, so every setting is made from MAXScript or Python.	Es una versión temprana: todavía no tiene interfaz, así que todos los ajustes se hacen desde MAXScript o Python.
-openscatter	Windows, 3ds Max 2027	Windows, 3ds Max 2027
+openscatter	Windows, 3ds Max 2027 only (tested)	Windows, solo 3ds Max 2027 (probado)
 openscatter	Real instances	Instancias reales
 openscatter	Arnold and Corona render every copy as an instance, each model with its own material.	Arnold y Corona renderizan cada copia como una instancia, y cada modelo con su material.
 openscatter	Several models	Varios modelos

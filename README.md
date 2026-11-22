@@ -10,7 +10,7 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
 
 - Lists the Open3D apps with the version you have and the latest one, with each version's release notes.
 - Installs each 3ds Max app as a plug-in bundle in `%APPDATA%\Autodesk\ApplicationPlugins`: per user, no
-  administrator rights, and every 3ds Max the app supports loads it (from 2025 on; OpenScatter needs 2027).
+  administrator rights, and every 3ds Max the app supports loads it (the versions are under Requirements).
   **Open in 3ds Max** starts the newest 3ds Max you have.
 - From version 0.4.0, installs each program of its own (OpenView, OpenRef, OpenFarm, OpenGaussian) for
   everyone on the computer, in `C:\Program Files\Open3D\<App>`, with its Windows Installer package and one
@@ -29,7 +29,12 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
   Windows (both in *Preferences*).
 - English and Spanish. No account, no sign-in, no telemetry.
 
-Requirements: Windows 10 or 11 (64-bit); 3ds Max 2025 or newer for the 3ds Max apps (2027 for OpenScatter).
+Requirements: Windows 10 or 11 (64-bit). For what runs inside 3ds Max:
+
+- OpenTools: tested on 3ds Max 2027; 2025 and 2026 should work, but are not tested.
+- OpenManager: tested on 3ds Max 2026.3 and 2027; 2025 should work, but is not tested.
+- OpenScatter: 3ds Max 2027 only (tested).
+- OpenFarm's button in 3ds Max: tested with 3ds Max 2027; 2025 and 2026 should work, but are not tested.
 
 ## Download and install
 

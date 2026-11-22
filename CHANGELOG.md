@@ -4,6 +4,8 @@ What each version of the Open3D Launcher adds, newest first.
 
 ## In development
 
+- **An app's page and the README say which 3ds Max versions each app was tested on,** and which should work
+  but are not tested.
 - **The Platforms box of an app's page is in Spanish too** when the launcher is; it was always in English.
 
 ## 0.4.0 — 21 November 2026
