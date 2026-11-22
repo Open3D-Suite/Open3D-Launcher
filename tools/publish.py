@@ -45,7 +45,7 @@ PUBLIC_KEY = LAUNCHER / "crates" / "core" / "assets" / "launcher-catalog-public-
 SIGNING_KEY = Path(os.path.expandvars(r"%USERPROFILE%\.open3d\launcher-catalog-signing-key.pem"))
 REMOTE = "origin"
 BRANCH = "main"
-LAUNCHER_REPO = "carlesllavata/Open3D"
+LAUNCHER_REPO = "Open3D-Suite/Open3D"
 
 # A tag as a checkout has it. `kind` is "tag" only for an annotated tag; a lightweight one is the commit itself.
 Tag = collections.namedtuple("Tag", "object kind commit")

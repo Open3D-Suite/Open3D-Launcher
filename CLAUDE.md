@@ -51,7 +51,7 @@ as a change that makes it old.
   - `launcher` builds, then tags HEAD with the annotated tag `vX.Y.Z`. While `git ls-remote origin` shows
     no such tag, or a `main` without that commit, it stops and prints `git push origin main` and
     `git push origin vX.Y.Z`. Run again with both there, it builds again and makes the release of
-    `carlesllavata/Open3D` as a draft, with the MSI, the portable zip and `SHA256SUMS.txt`.
+    `Open3D-Suite/Open3D` as a draft, with the MSI, the portable zip and `SHA256SUMS.txt`.
   - `catalog` signs `crates/core/catalog.toml` as `launcher-catalog.toml` and `.sig`, commits them, and
     prints `git push origin main` while `origin`'s `main` lacks that commit.
   - A release it makes is a draft, never marked as the latest. A draft that exists gets its files replaced.
