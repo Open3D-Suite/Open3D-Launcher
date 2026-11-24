@@ -6,6 +6,8 @@ What each version of the Open3D Launcher adds, newest first.
 
 - **OpenLibrary is in the launcher.** Install and update OpenLibrary, your library of models, materials and textures dragged
   into 3ds Max.
+- **OpenManager 3.0.0 says it is not tested yet.** Its page no longer lists the 3ds Max versions OpenManager
+  0.x was tested on.
 
 ## 0.5.0 — 22 November 2026
 

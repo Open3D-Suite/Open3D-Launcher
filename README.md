@@ -32,7 +32,7 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
 Requirements: Windows 10 or 11 (64-bit). For what runs inside 3ds Max:
 
 - OpenTools: tested on 3ds Max 2027; 2025 and 2026 should work, but are not tested.
-- OpenManager: tested on 3ds Max 2026.3 and 2027; 2025 should work, but is not tested.
+- OpenManager: 3.0.0 has not had its test in 3ds Max yet; 2025, 2026 and 2027 should work.
 - OpenScatter: 3ds Max 2027 only (tested).
 - OpenLibrary's bridge in 3ds Max: tested with 3ds Max 2026; 2025 and 2027 should work, but are not tested.
 - OpenFarm's button in 3ds Max: tested with 3ds Max 2027; 2025 and 2026 should work, but are not tested.
