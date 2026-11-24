@@ -1,0 +1,82 @@
+# Signs the catalog of an approved pull request and adds the signed files to its branch, so that the pull
+# request carries them when it is merged: nothing goes around the rules of main. Started by hand, from main:
+# Actions > sign-catalog > Run workflow, or  gh workflow run sign-catalog.yml -f pr=NUMBER
+#
+# The key is the secret CATALOG_SIGNING_KEY of the environment `catalog`, which only main may use. Only the
+# step that signs has it, and that step runs main's code alone: the pull request is data (tools/sign_pr.py).
+name: sign-catalog
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Number of the approved pull request
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sign-catalog
+  cancel-in-progress: false
+
+jobs:
+  sign:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 10
+    environment: catalog
+    permissions:
+      contents: write # the commit on the pull request's branch
+      pull-requests: read # its approval
+      actions: write # its checks: a push made with this token starts none
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: The pull request is approved
+        id: approved
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr }}
+        run: python -I tools/sign_pr.py approved "$PR"
+
+      - name: Get its commit
+        env:
+          COMMIT: ${{ steps.approved.outputs.commit }}
+        run: git fetch --no-tags origin "$COMMIT"
+
+      - name: Sign
+        id: sign
+        env:
+          CATALOG_SIGNING_KEY: ${{ secrets.CATALOG_SIGNING_KEY }}
+          COMMIT: ${{ steps.approved.outputs.commit }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: python -I tools/sign_pr.py sign "$COMMIT"
+
+      # A plain push: if the branch moved since it was approved, it is refused and nothing is signed into it.
+      - name: Add it to the pull request and start its checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNED: ${{ steps.sign.outputs.signed }}
+          COMMIT: ${{ steps.approved.outputs.commit }}
+          BRANCH: ${{ steps.approved.outputs.branch }}
+        run: |
+          if [ "$SIGNED" = "$COMMIT" ]; then echo "It was signed already."; exit 0; fi
+          gh auth setup-git
+          git push origin "$SIGNED:refs/heads/$BRANCH"
+          gh workflow run check.yml --ref "$BRANCH"

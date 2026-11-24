@@ -76,7 +76,9 @@ as a change that makes it old.
 - No plug-in is changed while a `3dsmax.exe` runs, batch and farm renders included, no program while a
   copy of it runs (`running.rs`; it can ask OpenFarm to quit). Old copies wait in `.open3d-<id>` till replaced.
 - The hosted catalog counts only if its signature matches the built-in public key; the private key is not
-  in the repo. It can add apps, but not change the name, repo, package or exe of a built-in one. The apps
+  in the repo. The workflow `sign-catalog` (by hand, from `main`) signs the catalog of an approved pull
+  request in its branch: `tools/sign_pr.py` takes what the pull request holds as data only, and the key is the
+  secret `CATALOG_SIGNING_KEY` of the environment `catalog`, which only `main` may use. It can add apps, but not change the name, repo, package or exe of a built-in one. The apps
   live under `catalog::GITHUB_OWNER` (`Open3D-Suite`); a built-in app's repo, an icon or a site it names
   under `FORMER_GITHUB_OWNER` (`carlesllavata`) is read as the same under `Open3D-Suite`
   (`hosted_catalog::under_current_owner`). A new app must be `Open3D-Suite/<id>`.
@@ -113,6 +115,8 @@ as a change that makes it old.
 - Launchers before 0.5.0 take a catalog entry only with its repo and icon under `carlesllavata`, and the
   signed `launcher-catalog.toml` names them there. `crates/core/catalog.toml` names `Open3D-Suite`, so
   what `publish.py catalog` signs from it, those launchers refuse whole: they keep their saved copy.
+- The commit `sign-catalog` adds dismisses the approval (a rule of `main`): approve again, then merge. The push
+  starts no check, so it starts `check.yml` itself.
 - Adding an app: its entry in `crates/core/catalog.toml`, `assets/app-icons/<id>.png` and its line in
   `catalog::app_icon_png`, its `es.tsv` rows, and the catalog signed again. `publish.py catalog` does not
   update the copy in `crates/core/tests/fixtures/`, which a test checks.
