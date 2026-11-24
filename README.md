@@ -128,18 +128,28 @@ cargo xtask ci                                # only fmt --check, clippy -D warn
 The MSI and the portable zip are made by `packaging\windows\package.ps1`, which needs
 [WiX Toolset 5](https://wixtoolset.org) with its UI and Util extensions (see the script's header).
 
-### Publishing (maintainers)
+### Publishing (members of Open3D-Suite)
 
 Each app is packaged and released from its own repository, with `python -I tools\repo.py package` and
-`python -I tools\repo.py release X.Y.Z` there. Here, `tools\publish.py` (`python -I tools\publish.py ...`)
-signs the catalog and releases the launcher, and needs the GitHub CLI. It never pushes and never publishes
-a release: where GitHub lacks a commit or a tag it stops and prints the `git push` to run, and every
-release it makes is a draft, which the maintainer publishes on GitHub. It never changes a release that is
-already published.
+`python -I tools\repo.py release X.Y.Z` there; its author publishes the draft.
 
-- `catalog`: signs `crates\core\catalog.toml` as `launcher-catalog.toml` + `.sig` with the maintainer's
+An app enters the launcher through a pull request to this repository: its entry in
+`crates\core\catalog.toml`, its icon, its Spanish texts. Another member reviews it and approves it; then
+any member runs *Actions → sign-catalog → Run workflow* with the pull request's number. GitHub signs the
+catalog with the key kept as a secret that only `main` may use and adds the signed files to the pull
+request, which is approved again and merged. Launchers read the new catalog at their next start.
+[Open3D-SDK's guide](https://github.com/Open3D-Suite/Open3D-SDK/blob/main/docs/distribution.md#entering-the-launcher)
+says every step.
+
+`tools\publish.py` (`python -I tools\publish.py ...`) releases the launcher and can sign the catalog by
+hand, and needs the GitHub CLI. It never pushes and never publishes a release: where GitHub lacks a commit
+or a tag it stops and prints the `git push` to run, and every release it makes is a draft. It never changes
+a release that is already published.
+
+- `catalog`: signs `crates\core\catalog.toml` as `launcher-catalog.toml` + `.sig` with the catalog's
   private key (never in this repository), copies the app icons into `launcher-app-icons\` and commits.
-  Launchers read them once that commit is pushed to `main`. Only needed when the list of apps changes.
+  Launchers read them once that commit is pushed to `main`. Only needed when the list of apps changes,
+  and only by whoever holds a copy of the key: the `sign-catalog` workflow is the usual way.
 - `launcher`: builds the MSI and the portable zip and tags the commit with the annotated tag `vX.Y.Z`.
   Run again once `main` and that tag are pushed, it builds again and makes a draft of this repository's
   release with the version's CHANGELOG section.
