@@ -33,6 +33,7 @@ Requirements: Windows 10 or 11 (64-bit). For what runs inside 3ds Max:
 
 - OpenTools: tested on 3ds Max 2027; 2025 and 2026 should work, but are not tested.
 - OpenManager: tested on 3ds Max 2026.3 and 2027; 2025 should work, but is not tested.
+- OpenScene: 3ds Max 2025 or newer should work; not tested yet.
 - OpenScatter: 3ds Max 2027 only (tested).
 - OpenFarm's button in 3ds Max: tested with 3ds Max 2027; 2025 and 2026 should work, but are not tested.
 
@@ -64,6 +65,9 @@ its settings and data*; removing a 3ds Max app keeps its settings.
 
 - **OpenManager**: scene setups and batch rendering for 3ds Max (Corona and V-Ray; reads Pulze Scene Manager
   setups). [Open3D-Suite/OpenManager](https://github.com/Open3D-Suite/OpenManager)
+
+- **OpenScene**: scene setups and batch rendering for 3ds Max, kept inside the `.max` file (Corona and V-Ray). Not
+  tested yet. [Open3D-Suite/OpenScene](https://github.com/Open3D-Suite/OpenScene)
 
 - **OpenView**: downloads 360 panoramas and photos from map applications at full resolution, with a 360
   viewer, crops and HDRIs. A program of its own: it doesn't need 3ds Max.

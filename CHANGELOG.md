@@ -2,6 +2,11 @@
 
 What each version of the Open3D Launcher adds, newest first.
 
+## In development
+
+- **OpenScene is in the launcher.** Install and update OpenScene, scene setups and batch rendering for 3ds Max,
+  kept inside the `.max` file. It is not tested yet.
+
 ## 0.5.0 — 22 November 2026
 
 - **Install this version by hand.** Open3D moved to the [Open3D-Suite](https://github.com/Open3D-Suite)
