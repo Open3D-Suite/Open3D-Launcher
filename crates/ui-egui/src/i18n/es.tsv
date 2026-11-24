@@ -424,3 +424,16 @@ openscatter	Keep the instances off steep ground, or inside a range of heights.	D
 openscatter	The same everywhere	Igual en todas partes
 openscatter	The same settings give the same scatter on every computer and with any number of threads.	Los mismos ajustes dan el mismo resultado en cualquier equipo y con cualquier número de hilos.
 	Open in 3ds Max	Abrir en 3ds Max
+openscene	Scene setups and batch rendering for 3ds Max	Configuraciones de escena y render por lotes para 3ds Max
+openscene	One scene, every shot ready to render.	Una escena, todos los planos listos para renderizar.
+openscene	OpenScene keeps setups inside your .max file: camera, resolution, frames, sun, environment, layers, objects, lights, output path and render settings. Click a setup and the scene follows; Batch Render renders every ticked setup, one after the other.	OpenScene guarda las configuraciones dentro de tu archivo .max: cámara, resolución, fotogramas, sol, entorno, capas, objetos, luces, ruta de salida y ajustes de render. Haz clic en una configuración y la escena se ajusta; Batch Render renderiza una tras otra todas las configuraciones marcadas.
+openscene	Scripts and render presets that come inside a file are shown and asked about before they run.	Los scripts y los presets de render que vienen dentro de un archivo se muestran y se pregunta antes de ejecutarlos.
+openscene	Windows, 3ds Max 2025 or newer (not tested yet)	Windows, 3ds Max 2025 o posterior (sin probar todavía)
+openscene	Setups	Configuraciones
+openscene	Everything a shot needs, saved per shot inside the .max file.	Todo lo que necesita un plano, guardado por plano dentro del archivo .max.
+openscene	Batch Render	Batch Render
+openscene	Render every ticked setup in a row; none is rendered without saving it.	Renderiza seguidas todas las configuraciones marcadas; ninguna se renderiza sin guardarla.
+openscene	Shared layers and objects	Capas y objetos compartidos
+openscene	One list for every setup, each with its own ticks, through renames and merges.	Una lista para todas las configuraciones, cada una con sus casillas, aunque renombres o combines.
+openscene	Environments	Entornos
+openscene	Several HDRIs and skies mixed in one setup, with a browser for your HDRI folders.	Varios HDRI y cielos mezclados en una configuración, con un explorador de tus carpetas de HDRI.
