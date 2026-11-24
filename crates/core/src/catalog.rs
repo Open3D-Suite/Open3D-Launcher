@@ -224,6 +224,7 @@ pub fn app_icon_png(id: &str) -> Option<&'static [u8]> {
         "openref" => include_bytes!("../../../assets/app-icons/openref.png"),
         "openfarm" => include_bytes!("../../../assets/app-icons/openfarm.png"),
         "openscatter" => include_bytes!("../../../assets/app-icons/openscatter.png"),
+        "openlibrary" => include_bytes!("../../../assets/app-icons/openlibrary.png"),
         _ => return None,
     })
 }
@@ -252,9 +253,9 @@ mod tests {
     }
 
     #[test]
-    fn openview_opengaussian_openref_and_openfarm_are_the_standalone_apps_in_the_catalog() {
+    fn openview_opengaussian_openref_openfarm_and_openlibrary_are_the_standalone_apps_in_the_catalog() {
         let standalone: Vec<&str> = SUITE.iter().filter(|a| a.is_standalone()).map(|a| a.id).collect();
-        assert_eq!(standalone, ["openview", "opengaussian", "openref", "openfarm"]);
+        assert_eq!(standalone, ["openview", "opengaussian", "openref", "openfarm", "openlibrary"]);
         let openview = SUITE.iter().find(|a| a.id == "openview").unwrap();
         assert_eq!((openview.name, openview.repo), ("OpenView", "Open3D-Suite/OpenView"));
         assert_eq!(openview.kinds(), [crate::PackageKind::Msi, crate::PackageKind::AppZip]);

@@ -2,6 +2,11 @@
 
 What each version of the Open3D Launcher adds, newest first.
 
+## In development
+
+- **OpenLibrary is in the launcher.** Install and update OpenLibrary, your library of models, materials and textures dragged
+  into 3ds Max.
+
 ## 0.5.0 — 22 November 2026
 
 - **Install this version by hand.** Open3D moved to the [Open3D-Suite](https://github.com/Open3D-Suite)
