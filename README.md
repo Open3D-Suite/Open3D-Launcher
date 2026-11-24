@@ -135,9 +135,11 @@ Each app is packaged and released from its own repository, with `python -I tools
 
 An app enters the launcher through a pull request to this repository: its entry in
 `crates\core\catalog.toml`, its icon, its Spanish texts. Another member reviews it and approves it; then
-any member runs *Actions → sign-catalog → Run workflow* with the pull request's number. GitHub signs the
-catalog with the key kept as a secret that only `main` may use and adds the signed files to the pull
-request, which is approved again and merged. Launchers read the new catalog at their next start.
+any member runs *Actions → sign-catalog → Run workflow* with the pull request's number, and a member other
+than whoever started it approves the run (*Review deployments*). GitHub signs the catalog with the key
+kept as a secret that only `main` may use and adds the signed files to the pull request, which is approved
+again and merged. Launchers read the new catalog at their next start. Every member writes in this
+repository; the last push to a pull request must be approved by someone other than whoever pushed it.
 [Open3D-SDK's guide](https://github.com/Open3D-Suite/Open3D-SDK/blob/main/docs/distribution.md#entering-the-launcher)
 says every step.
 

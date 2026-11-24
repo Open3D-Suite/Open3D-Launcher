@@ -78,7 +78,9 @@ as a change that makes it old.
 - The hosted catalog counts only if its signature matches the built-in public key; the private key is not
   in the repo. The workflow `sign-catalog` (by hand, from `main`) signs the catalog of an approved pull
   request in its branch: `tools/sign_pr.py` takes what the pull request holds as data only, and the key is the
-  secret `CATALOG_SIGNING_KEY` of the environment `catalog`, which only `main` may use. It can add apps, but not change the name, repo, package or exe of a built-in one. The apps
+  secret `CATALOG_SIGNING_KEY` of the environment `catalog`, which only `main` may use and which waits for
+  a member of the team `members` other than whoever started the run. It can add apps, but not change the
+  name, repo, package or exe of a built-in one. The apps
   live under `catalog::GITHUB_OWNER` (`Open3D-Suite`); a built-in app's repo, an icon or a site it names
   under `FORMER_GITHUB_OWNER` (`carlesllavata`) is read as the same under `Open3D-Suite`
   (`hosted_catalog::under_current_owner`). A new app must be `Open3D-Suite/<id>`.
