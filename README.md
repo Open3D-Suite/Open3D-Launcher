@@ -12,7 +12,7 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
 - Installs each 3ds Max app as a plug-in bundle in `%APPDATA%\Autodesk\ApplicationPlugins`: per user, no
   administrator rights, and every 3ds Max the app supports loads it (the versions are under Requirements).
   **Open in 3ds Max** starts the newest 3ds Max you have.
-- From version 0.4.0, installs each program of its own (OpenView, OpenRef, OpenFarm, OpenGaussian) for
+- From version 0.4.0, installs each program of its own (OpenView, OpenRef, OpenFarm, OpenGaussian, OpenLibrary) for
   everyone on the computer, in `C:\Program Files\Open3D\<App>`, with its Windows Installer package and one
   shortcut in the Start menu. Windows asks for permission at each install, update and removal; the packages
   aren't signed yet, so its prompt says "Unknown publisher". Once a package has installed, the copy of that
@@ -34,6 +34,7 @@ Requirements: Windows 10 or 11 (64-bit). For what runs inside 3ds Max:
 - OpenTools: tested on 3ds Max 2027; 2025 and 2026 should work, but are not tested.
 - OpenManager: tested on 3ds Max 2026.3 and 2027; 2025 should work, but is not tested.
 - OpenScatter: 3ds Max 2027 only (tested).
+- OpenLibrary's bridge in 3ds Max: tested with 3ds Max 2026; 2025 and 2027 should work, but are not tested.
 - OpenFarm's button in 3ds Max: tested with 3ds Max 2027; 2025 and 2026 should work, but are not tested.
 
 ## Download and install
@@ -85,6 +86,10 @@ its settings and data*; removing a 3ds Max app keeps its settings.
   your models on surfaces (tested in Arnold and Corona, not yet in V-Ray). An early version, with no
   interface yet. [Open3D-Suite/OpenScatter](https://github.com/Open3D-Suite/OpenScatter)
 
+- **OpenLibrary**: your own folders of models, materials, textures and interiors with their previews, dragged into 3ds Max
+  (Corona and V-Ray), and downloads catalogued into them. A program of its own.
+  [Open3D-Suite/OpenLibrary](https://github.com/Open3D-Suite/OpenLibrary)
+
 More apps are added to the catalog as they are published.
 
 ## How it works
@@ -99,7 +104,7 @@ More apps are added to the catalog as they are published.
 - **3ds Max apps.** The package is `<id>-<version>-windows-x64-3dsmax.zip`, with the `.bundle` folder at the
   zip's root; the bundle's `PackageContents.xml` must say the release's version.
 - **Programs.** An app the catalog marks `package = "standalone"` is a program of its own (OpenView,
-  OpenGaussian, OpenRef, OpenFarm). Its release carries `<id>-<version>-windows-x64.msi`, a Windows
+  OpenGaussian, OpenRef, OpenFarm, OpenLibrary). Its release carries `<id>-<version>-windows-x64.msi`, a Windows
   Installer package for everyone on the computer, and `<id>-<version>-windows-x64.zip`. The launcher
   installs, updates and removes the program with the package, which it starts like any other program so
   that Windows asks for permission, one at a time; it finds that copy by its entry in Windows' installed
