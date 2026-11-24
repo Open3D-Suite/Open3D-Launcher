@@ -265,3 +265,41 @@ text = "Keep the instances off steep ground, or inside a range of heights."
 [[apps.details.features]]
 title = "The same everywhere"
 text = "The same settings give the same scatter on every computer and with any number of threads."
+
+[[apps]]
+color = [240, 169, 59]
+former_bundles = []
+former_ids = []
+former_names = []
+id = "openlibrary"
+binary = "openlibrary"
+site = "https://github.com/Open3D-Suite/OpenLibrary"
+windows_msi_publisher = "Open3D"
+desktop_categories = ["Graphics", "3DGraphics"]
+startup_wm_class = "openlibrary"
+icon_url = "https://raw.githubusercontent.com/Open3D-Suite/Open3D-Launcher/main/launcher-app-icons/openlibrary-0ea4737141c4f9f92c72b593024e9807b10022c6be7fb4df2c2a98f3ec0b27fd.png"
+icon_sha256 = "0ea4737141c4f9f92c72b593024e9807b10022c6be7fb4df2c2a98f3ec0b27fd"
+ink_dark = [247, 190, 102]
+ink_light = [168, 110, 20]
+kind = "official"
+name = "OpenLibrary"
+publisher = "Open3D"
+repo = "Open3D-Suite/OpenLibrary"
+package = "standalone"
+tagline = "Your 3D library, dragged into 3ds Max"
+[apps.details]
+headline = "Models, materials and textures, from your folders to the scene."
+about = "OpenLibrary shows your own folders of models, materials, textures and window interiors with their previews, and brings them into 3ds Max by dragging: as a merge, as a Corona or V-Ray proxy, or as a material with its real size.\n\nYour folders are the library: there is no database and no account, and a team can share its tabs and material sizes."
+platforms = "Windows, 3ds Max 2026 (tested), 2025 and 2027 (not tested)"
+[[apps.details.features]]
+title = "Drag into the scene"
+text = "Models with the version of your renderer, as proxies, in their place or as instances of what is there; materials on objects or in Slate."
+[[apps.details.features]]
+title = "Catalogue downloads"
+text = "Open a zip, rar or 7z and save it under one name, with its Corona version if you want it."
+[[apps.details.features]]
+title = "In the background"
+text = "Previews, face counts and missing files, without touching your open scene."
+[[apps.details.features]]
+title = "For a team"
+text = "A shared folder keeps tabs, hidden folders and material sizes the same for everyone."

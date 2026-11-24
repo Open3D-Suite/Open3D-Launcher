@@ -423,4 +423,17 @@ openscatter	Slope and altitude	Pendiente y altitud
 openscatter	Keep the instances off steep ground, or inside a range of heights.	Deja las instancias fuera de las pendientes fuertes o dentro de un rango de alturas.
 openscatter	The same everywhere	Igual en todas partes
 openscatter	The same settings give the same scatter on every computer and with any number of threads.	Los mismos ajustes dan el mismo resultado en cualquier equipo y con cualquier número de hilos.
+openlibrary	Your 3D library, dragged into 3ds Max	Tu biblioteca 3D, arrastrada a 3ds Max
+openlibrary	Models, materials and textures, from your folders to the scene.	Modelos, materiales y texturas, de tus carpetas a la escena.
+openlibrary	OpenLibrary shows your own folders of models, materials, textures and window interiors with their previews, and brings them into 3ds Max by dragging: as a merge, as a Corona or V-Ray proxy, or as a material with its real size.	OpenLibrary enseña tus carpetas de modelos, materiales, texturas e interiores de ventana con sus previews, y las lleva a 3ds Max arrastrando: como merge, como proxy de Corona o V-Ray, o como material con su tamaño real.
+openlibrary	Your folders are the library: there is no database and no account, and a team can share its tabs and material sizes.	La biblioteca son tus carpetas: sin base de datos ni cuenta, y un equipo puede compartir sus pestañas y las medidas de los materiales.
+openlibrary	Windows, 3ds Max 2026 (tested), 2025 and 2027 (not tested)	Windows, 3ds Max 2026 (probado), 2025 y 2027 (sin probar)
+openlibrary	Drag into the scene	Arrastra a la escena
+openlibrary	Models with the version of your renderer, as proxies, in their place or as instances of what is there; materials on objects or in Slate.	Modelos con la versión de tu motor, como proxies, en su sitio o como instancias de lo que ya hay; materiales en objetos o en Slate.
+openlibrary	Catalogue downloads	Cataloga descargas
+openlibrary	Open a zip, rar or 7z and save it under one name, with its Corona version if you want it.	Abre un zip, rar o 7z y guárdalo con un nombre, con su versión Corona si la quieres.
+openlibrary	In the background	En segundo plano
+openlibrary	Previews, face counts and missing files, without touching your open scene.	Previews, número de caras y archivos que faltan, sin tocar tu escena abierta.
+openlibrary	For a team	Para un equipo
+openlibrary	A shared folder keeps tabs, hidden folders and material sizes the same for everyone.	Una carpeta compartida mantiene las pestañas, las carpetas ocultas y las medidas de los materiales iguales para todos.
 	Open in 3ds Max	Abrir en 3ds Max
