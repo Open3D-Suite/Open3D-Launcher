@@ -124,7 +124,7 @@ workload.
 
 ```
 cargo build --release -p open3d-launcher     # target\release\open3d-launcher.exe
-tools\check.ps1                               # every check; -Full adds one that needs the network
+tools\check.ps1                               # every check; -Full adds one that needs the network and one that needs WiX 5
 cargo xtask ci                                # only fmt --check, clippy -D warnings, tests
 ```
 

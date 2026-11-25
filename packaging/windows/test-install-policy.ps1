@@ -15,6 +15,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+if (-not (Get-Command wix -ErrorAction SilentlyContinue)) {
+  throw 'wix was not found on PATH. This test needs WiX 5.0.2 with its UI and Util extensions: dotnet tool install --global wix --version 5.0.2, then wix extension add -g WixToolset.UI.wixext/5.0.2 WixToolset.Util.wixext/5.0.2'
+}
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).ProviderPath
 $policy = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'install-policy.json') | ConvertFrom-Json
 [void](New-Item -ItemType Directory -Force -Path $OutputDirectory)

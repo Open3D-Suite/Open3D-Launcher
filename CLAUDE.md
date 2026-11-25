@@ -27,8 +27,10 @@ as a change that makes it old.
   - `python -I -m unittest discover -s tools`: `tools/test_publish.py`, which runs no command
   - `cargo clippy --workspace --all-targets --locked -- -D warnings`
   - `cargo test --workspace --locked` (4 tests are ignored: 2 need the network, 2 are started by another)
-  - only with `tools\check.ps1 -Full`: the ignored test of the live signed catalog. The other network test
-    reads `Open3D-Suite/wordtool`, which does not exist, and is left out.
+  - only with `tools\check.ps1 -Full`: the ignored test of the live signed catalog (the other network test
+    reads `Open3D-Suite/wordtool`, which does not exist, and is left out), then
+    `packaging/windows/test-install-policy.ps1`, whose MSIs go to `target/install-policy-tests`: it needs
+    WiX 5 with its UI and Util extensions on PATH, and no release build.
 - CI: `.github/workflows/check.yml` runs `tools\check.ps1`, without `-Full`, on every push and pull request
   to `main`, on GitHub's Windows runner with Python 3.14. `cargo xtask ci` runs fmt, clippy and the tests.
 - `.editorconfig`, `.gitattributes`, `rustfmt.toml`, `clippy.toml`, `ruff.toml`, `LICENSE`, `tools/check.ps1`

@@ -48,6 +48,15 @@ name = "cargo test live catalog"
 run = ["cargo", "test", "-p", "open3d-launcher-native", "--lib", "--locked", "--", "--ignored", "--exact", "hosted_catalog::tests::live_catalog_is_verified_cached_and_activated"]
 full = true
 
+# The launcher's installation policy (packaging/windows/INSTALLATION.md): MSIs of placeholder files,
+# for x64, x86 and arm64, that check-install-policy.ps1 must accept, and changed ones it must refuse.
+# None is installed and no release build is needed. It needs WiX 5.0.2 with its UI and Util
+# extensions on PATH; the MSIs go to target/, which Git ignores.
+[[check]]
+name = "install policy"
+run = ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "packaging/windows/test-install-policy.ps1", "-OutputDirectory", "target/install-policy-tests"]
+full = true
+
 # Folders of made-up users in tests and examples. None is the folder of a real person.
 [private_data]
 allow = [
