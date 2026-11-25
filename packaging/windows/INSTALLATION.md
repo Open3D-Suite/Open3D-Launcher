@@ -28,5 +28,6 @@ program's zip instead, per user, into `%LOCALAPPDATA%\Programs\Open3D\<App>` (a 
 
 `./packaging/windows/test-install-policy.ps1 -OutputDirectory ./target/install-policy-tests`
 builds non-executable MSIs for x64, x86 and arm64 and checks their compiled paths, identity and
-registration (`check-install-policy.ps1`). Never install them. `package.ps1` runs the same check
-on the real MSI.
+registration (`check-install-policy.ps1`), and that the policy refuses an uninstall cleanup that was
+changed. Never install them. It needs WiX 5 with its UI and Util extensions on PATH, and
+`tools\check.ps1 -Full` runs it. `package.ps1` runs the same check on the real MSI.
