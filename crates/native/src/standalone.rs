@@ -2,7 +2,7 @@
 //! Open3D apps that are programs of their own: installing, updating, finding and removing them.
 //!
 //! A release asset (`<app>-<version>-windows-x64.zip`) holds `<App>.exe` and its files at its root,
-//! or the program where the catalog's `exe` says (`bin/OpenGaussian.exe`, for a program that needs
+//! or the program where the catalog's `exe` says (`bin/PhotoTool.exe`, for a program that needs
 //! the folders around it). They go in `%LOCALAPPDATA%\Programs\Open3D\<App>`, beside the launcher's
 //! own folder: per user, so no administrator rights are needed. A first install adds `<App>.lnk` to
 //! the Start menu and to the desktop. A portable launcher keeps them in `Open3DLauncherData\Programs`
@@ -81,7 +81,7 @@ fn shortcut_folders() -> Vec<PathBuf> {
 }
 
 /// The program as the package and messages name it: `<App name>.exe` (`PhotoTool.exe`), or the
-/// catalog's path inside the folder (`bin/OpenGaussian.exe`).
+/// catalog's path inside the folder (`bin/PhotoTool.exe`).
 pub fn exe_name(app: &SuiteApp) -> String {
     app.exe_relative()
 }
@@ -622,7 +622,7 @@ mod tests {
         assert!(!places.apps.exists());
     }
 
-    /// The sample app with its program in `bin`, next to folders it needs (OpenGaussian's layout).
+    /// The sample app with its program in `bin`, next to folders it needs.
     fn nested_app() -> SuiteApp {
         SuiteApp { exe: Some("bin/PhotoTool.exe"), ..app() }
     }

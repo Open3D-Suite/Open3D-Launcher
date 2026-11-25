@@ -349,7 +349,7 @@ openmanager	Scene setups and batch rendering for 3ds Max	Configuraciones de esce
 openmanager	Every shot of a scene, one click away.	Cada plano de la escena, a un clic.
 openmanager	OpenManager keeps setups inside your .max file: camera, resolution, frames, sun, dome, environment, layers, objects, lights, output path and render settings. Click a setup and the scene follows; Batch Render renders every ticked setup one after the other.	OpenManager guarda las configuraciones dentro de tu archivo .max: cámara, resolución, fotogramas, sol, domo, entorno, capas, objetos, luces, ruta de salida y ajustes de render. Haz clic en una configuración y la escena se ajusta; Batch Render renderiza una tras otra todas las configuraciones marcadas.
 openmanager	It works with Corona and V-Ray, and reads setups made with Pulze Scene Manager.	Funciona con Corona y V-Ray, y lee las configuraciones creadas con Pulze Scene Manager.
-openmanager	Windows, 3ds Max 2026.3 and 2027 (tested), 2025 (not tested)	Windows, 3ds Max 2026.3 y 2027 (probados), 2025 (sin probar)
+openmanager	Windows, 3ds Max 2025, 2026 and 2027 (not tested)	Windows, 3ds Max 2025, 2026 y 2027 (sin probar)
 openmanager	Setups	Configuraciones
 openmanager	Camera, lights, layers, objects and render settings saved per shot, inside the .max file.	Cámara, luces, capas, objetos y ajustes de render guardados por plano, dentro del archivo .max.
 openmanager	Batch render	Render por lotes
@@ -371,19 +371,6 @@ openview	Crops	Recortes
 openview	Frame a view in the 360 viewer and save it as an ordinary photo.	Encuadra una vista en el visor 360 y guárdala como una foto normal.
 openview	HDRI	HDRI
 openview	Turn a panorama into an EXR or .hdr with a sun, to light a scene.	Convierte un panorama en un EXR o .hdr con sol, para iluminar una escena.
-opengaussian	3D Gaussian Splatting: train, view and edit	3D Gaussian Splatting: entrena, visualiza y edita
-opengaussian	Turn photos into a walkable 3D scene.	Convierte tus fotos en una escena 3D recorrible.
-opengaussian	OpenGaussian trains 3D Gaussian Splatting scenes from your photos, shows them in real time while they train, and lets you select, edit and export the splats to PLY, SOG, SPZ, USD or a web viewer.	OpenGaussian entrena escenas de 3D Gaussian Splatting a partir de tus fotos, las muestra en tiempo real mientras se entrenan y te deja seleccionar, editar y exportar los splats a PLY, SOG, SPZ, USD o a un visor web.
-opengaussian	It is a program of its own, based on LichtFeld Studio, and needs an NVIDIA graphics card (GTX 16 or RTX 20 series or newer).	Es un programa independiente, basado en LichtFeld Studio, y necesita una tarjeta gráfica NVIDIA (serie GTX 16 o RTX 20 o posterior).
-opengaussian	Windows 10 or 11 (64-bit), NVIDIA GTX 16 or RTX 20 series or newer	Windows 10 u 11 (64 bits), NVIDIA serie GTX 16 o RTX 20 o posterior
-opengaussian	Training	Entrenamiento
-opengaussian	Turns a set of photos into a splat scene on your graphics card, and resumes from checkpoints.	Convierte un conjunto de fotos en una escena de splats con tu tarjeta gráfica y retoma desde puntos de control.
-opengaussian	Live view	Vista en directo
-opengaussian	Look around the scene while it trains and inspect it in real time.	Recorre la escena mientras se entrena e inspecciónala en tiempo real.
-opengaussian	Editing	Edición
-opengaussian	Select, move and delete splats, with undo and redo.	Selecciona, mueve y borra splats, con deshacer y rehacer.
-opengaussian	Export	Exportación
-opengaussian	Save to PLY, SOG, SPZ or USD, or as a web page anyone can open.	Guarda en PLY, SOG, SPZ o USD, o como una página web que cualquiera puede abrir.
 openref	Reference-image boards that float over your work	Tableros de referencias que flotan sobre tu trabajo
 openref	Your references, pinned over 3ds Max.	Tus referencias, clavadas sobre 3ds Max.
 openref	OpenRef keeps reference images on an infinite board: paste or drop them, then move, scale, rotate, crop and annotate them, and save the board as one file with its images inside. Keep it on top of 3ds Max or any other program, see-through, or letting the mouse through to trace over a reference.	OpenRef guarda imágenes de referencia en un tablero infinito: pégalas o suéltalas y luego muévelas, escálalas, gíralas, recórtalas y anótalas, y guarda el tablero en un solo archivo con sus imágenes dentro. Déjalo encima de 3ds Max o de cualquier otro programa, semitransparente o dejando pasar el ratón para calcar sobre una referencia.

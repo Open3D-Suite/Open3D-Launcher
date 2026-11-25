@@ -275,6 +275,11 @@ pub fn valid_icon(bytes: &[u8], digest: &str) -> bool {
 }
 
 fn valid_record(r: &Record) -> bool {
+    valid_against(r, &SUITE)
+}
+
+/// [`valid_record`], with `built_in` as the apps this launcher was built with.
+fn valid_against(r: &Record, built_in: &[SuiteApp]) -> bool {
     if !identifier(&r.id)
         || r.id.as_bytes().first().is_none_or(|c| !c.is_ascii_lowercase())
         || r.id == "open3d-launcher"
@@ -303,7 +308,7 @@ fn valid_record(r: &Record) -> bool {
     }
     // A signature cannot expand the compiled community allowlist or change existing install
     // identities. These checks keep native detection/uninstall and publisher verification pinned.
-    if let Some(pinned) = SUITE.iter().find(|a| a.id == r.id) {
+    if let Some(pinned) = built_in.iter().find(|a| a.id == r.id) {
         if !same_repository(&r.repo, pinned.repo)
             || (r.kind == "official") != (pinned.kind == AppKind::Official)
             || r.publisher != pinned.publisher
@@ -385,7 +390,7 @@ fn under_current_owner(mut r: Record) -> Record {
 
 /// A name Windows takes as a file or folder name as it is.
 /// A program's place inside its app folder: up to four `/`-separated names Windows takes as file
-/// names (no `.` or `..`, no drive or root), the last one an `.exe` (`bin/OpenGaussian.exe`).
+/// names (no `.` or `..`, no drive or root), the last one an `.exe` (`bin/PhotoTool.exe`).
 pub fn valid_exe_path(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
     parts.len() <= 4
@@ -655,6 +660,23 @@ mod tests {
             r.exe = Some("elsewhere/Other.exe".into());
             assert!(!valid_record(&r), "{}", built_in.id);
         }
+        // Nor that of one built with its program in a folder of its own.
+        let built_in = [SuiteApp {
+            id: "exampletool",
+            name: "ExampleTool",
+            repo: "Open3D-Suite/exampletool",
+            package: AppPackage::Standalone,
+            exe: Some("bin/ExampleTool.exe"),
+            ..SUITE[0]
+        }];
+        let mut r = future_app();
+        r.package = Some("standalone".into());
+        r.exe = Some("bin/ExampleTool.exe".into());
+        assert!(valid_against(&r, &built_in));
+        r.exe = Some("elsewhere/Other.exe".into());
+        assert!(!valid_against(&r, &built_in));
+        r.exe = None;
+        assert!(!valid_against(&r, &built_in));
     }
 
     fn future_app() -> Record {

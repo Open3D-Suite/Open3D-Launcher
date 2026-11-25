@@ -12,7 +12,7 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
 - Installs each 3ds Max app as a plug-in bundle in `%APPDATA%\Autodesk\ApplicationPlugins`: per user, no
   administrator rights, and every 3ds Max the app supports loads it (the versions are under Requirements).
   **Open in 3ds Max** starts the newest 3ds Max you have.
-- From version 0.4.0, installs each program of its own (OpenView, OpenRef, OpenFarm, OpenGaussian, OpenLibrary) for
+- From version 0.4.0, installs each program of its own (OpenView, OpenRef, OpenFarm, OpenLibrary) for
   everyone on the computer, in `C:\Program Files\Open3D\<App>`, with its Windows Installer package and one
   shortcut in the Start menu. Windows asks for permission at each install, update and removal; the packages
   aren't signed yet, so its prompt says "Unknown publisher". Once a package has installed, the copy of that
@@ -32,7 +32,7 @@ adapted to the Open3D apps: 3ds Max plug-ins and standalone programs (see [Credi
 Requirements: Windows 10 or 11 (64-bit). For what runs inside 3ds Max:
 
 - OpenTools: tested on 3ds Max 2027; 2025 and 2026 should work, but are not tested.
-- OpenManager: tested on 3ds Max 2026.3 and 2027; 2025 should work, but is not tested.
+- OpenManager: 3.0.0 has not had its test in 3ds Max yet; 2025, 2026 and 2027 should work.
 - OpenScatter: 3ds Max 2027 only (tested).
 - OpenLibrary's bridge in 3ds Max: tested with 3ds Max 2026; 2025 and 2027 should work, but are not tested.
 - OpenFarm's button in 3ds Max: tested with 3ds Max 2027; 2025 and 2026 should work, but are not tested.
@@ -70,10 +70,6 @@ its settings and data*; removing a 3ds Max app keeps its settings.
   viewer, crops and HDRIs. A program of its own: it doesn't need 3ds Max.
   [Open3D-Suite/OpenView](https://github.com/Open3D-Suite/OpenView)
 
-- **OpenGaussian**: trains, views, edits and exports 3D Gaussian Splatting scenes from your photos, based on
-  LichtFeld Studio. A program of its own; it needs an NVIDIA graphics card (GTX 16 or RTX 20 series or newer).
-  [Open3D-Suite/OpenGaussian](https://github.com/Open3D-Suite/OpenGaussian)
-
 - **OpenRef**: reference-image boards that float over 3ds Max or any other program: paste, crop, arrange
   and annotate images, see-through or letting the mouse through. A program of its own: it doesn't need
   3ds Max. [Open3D-Suite/OpenRef](https://github.com/Open3D-Suite/OpenRef)
@@ -104,13 +100,13 @@ More apps are added to the catalog as they are published.
 - **3ds Max apps.** The package is `<id>-<version>-windows-x64-3dsmax.zip`, with the `.bundle` folder at the
   zip's root; the bundle's `PackageContents.xml` must say the release's version.
 - **Programs.** An app the catalog marks `package = "standalone"` is a program of its own (OpenView,
-  OpenGaussian, OpenRef, OpenFarm, OpenLibrary). Its release carries `<id>-<version>-windows-x64.msi`, a Windows
+  OpenRef, OpenFarm, OpenLibrary). Its release carries `<id>-<version>-windows-x64.msi`, a Windows
   Installer package for everyone on the computer, and `<id>-<version>-windows-x64.zip`. The launcher
   installs, updates and removes the program with the package, which it starts like any other program so
   that Windows asks for permission, one at a time; it finds that copy by its entry in Windows' installed
   apps, and once the package has installed it removes the copy an older launcher unpacked in your user
   folder. A portable launcher, or a release with no package, unpacks the zip instead: `<App>.exe` at the
-  zip's root, or where the catalog's `exe` says (`exe = "bin/OpenGaussian.exe"`, for a program that needs
+  zip's root, or where the catalog's `exe` says (`exe = "bin/<App>.exe"`, for a program that needs
   the folders around it), whose file properties must say the release's version. A portable launcher puts
   it in `Open3DLauncherData\Programs\<App>` with no shortcut; otherwise it goes in
   `%LOCALAPPDATA%\Programs\Open3D\<App>`, with Start menu and desktop shortcuts on a first install.
