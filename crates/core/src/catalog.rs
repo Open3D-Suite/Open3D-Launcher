@@ -88,7 +88,7 @@ pub struct SuiteApp {
     /// A 3ds Max plug-in or a program of its own.
     pub package: AppPackage,
     /// Where a program of its own sits in its folder, `/`-separated, when it isn't `<name>.exe` at
-    /// the folder's root (`bin/OpenGaussian.exe`: a program that needs the folders around it).
+    /// the folder's root (`bin/PhotoTool.exe`: a program that needs the folders around it).
     pub exe: Option<&'static str>,
 }
 
@@ -104,7 +104,7 @@ impl SuiteApp {
     }
 
     /// A program of its own's exe inside its folder, `/`-separated: `<name>.exe`, or the catalog's
-    /// `exe` (`bin/OpenGaussian.exe`).
+    /// `exe` (`bin/PhotoTool.exe`).
     pub fn exe_relative(&self) -> String {
         self.exe.map_or_else(|| format!("{}.exe", self.name), str::to_string)
     }
@@ -220,7 +220,6 @@ pub fn app_icon_png(id: &str) -> Option<&'static [u8]> {
         "opentools" => include_bytes!("../../../assets/app-icons/opentools.png"),
         "openmanager" => include_bytes!("../../../assets/app-icons/openmanager.png"),
         "openview" => include_bytes!("../../../assets/app-icons/openview.png"),
-        "opengaussian" => include_bytes!("../../../assets/app-icons/opengaussian.png"),
         "openref" => include_bytes!("../../../assets/app-icons/openref.png"),
         "openfarm" => include_bytes!("../../../assets/app-icons/openfarm.png"),
         "openscatter" => include_bytes!("../../../assets/app-icons/openscatter.png"),
@@ -253,16 +252,20 @@ mod tests {
     }
 
     #[test]
-    fn openview_opengaussian_openref_openfarm_and_openlibrary_are_the_standalone_apps_in_the_catalog() {
+    fn openview_openref_openfarm_and_openlibrary_are_the_standalone_apps_in_the_catalog() {
         let standalone: Vec<&str> = SUITE.iter().filter(|a| a.is_standalone()).map(|a| a.id).collect();
-        assert_eq!(standalone, ["openview", "opengaussian", "openref", "openfarm", "openlibrary"]);
+        assert_eq!(standalone, ["openview", "openref", "openfarm", "openlibrary"]);
         let openview = SUITE.iter().find(|a| a.id == "openview").unwrap();
         assert_eq!((openview.name, openview.repo), ("OpenView", "Open3D-Suite/OpenView"));
         assert_eq!(openview.kinds(), [crate::PackageKind::Msi, crate::PackageKind::AppZip]);
         assert_eq!(openview.exe_relative(), "OpenView.exe");
-        let opengaussian = SUITE.iter().find(|a| a.id == "opengaussian").unwrap();
-        assert_eq!((opengaussian.name, opengaussian.repo), ("OpenGaussian", "Open3D-Suite/OpenGaussian"));
-        assert_eq!(opengaussian.exe_relative(), "bin/OpenGaussian.exe");
+        // A program that needs the folders around it sits where the catalog's `exe` says.
+        let nested = SuiteApp {
+            package: AppPackage::Standalone,
+            exe: Some("bin/PhotoTool.exe"),
+            ..app("phototool", "PhotoTool", "Photos", [[0; 3]; 3], "Open3D-Suite/phototool")
+        };
+        assert_eq!(nested.exe_relative(), "bin/PhotoTool.exe");
         let openref = SUITE.iter().find(|a| a.id == "openref").unwrap();
         assert_eq!((openref.name, openref.repo), ("OpenRef", "Open3D-Suite/OpenRef"));
         assert_eq!(openref.exe_relative(), "OpenRef.exe");

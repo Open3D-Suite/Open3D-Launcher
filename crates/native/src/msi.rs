@@ -433,10 +433,10 @@ mod tests {
         assert_eq!(found.version, version::parse("0.2.0"));
         assert_eq!(found.location, r"C:\Program Files\Open3D\OpenRef\OpenRef.exe");
         assert_eq!(found.package.as_deref(), Some(CODE));
-        // OpenGaussian's program sits in `bin`.
-        let gaussian = SuiteApp::by_id("opengaussian").unwrap();
-        assert_eq!(exe_in(gaussian, suite), Path::new(r"C:\Program Files\Open3D\OpenGaussian\bin\OpenGaussian.exe"));
-        assert_eq!(detect_in(gaussian, &registry, suite), None);
+        // A program whose catalog says it sits in `bin`.
+        let nested = SuiteApp { id: "phototool", name: "PhotoTool", exe: Some("bin/PhotoTool.exe"), ..*openref() };
+        assert_eq!(exe_in(&nested, suite), Path::new(r"C:\Program Files\Open3D\PhotoTool\bin\PhotoTool.exe"));
+        assert_eq!(detect_in(&nested, &registry, suite), None);
     }
 
     #[test]
