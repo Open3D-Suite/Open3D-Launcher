@@ -9,8 +9,10 @@ What each version of the Open3D Launcher adds, newest first.
 - **OpenManager 3.0.0 says it is not tested yet.** Its page no longer lists the 3ds Max versions OpenManager
   0.x was tested on.
 - **OpenGaussian is no longer in the launcher.** This launcher no longer lists, installs, updates or
-  removes it. If you installed it, it stays on your computer and keeps working; to remove it, uninstall it
-  from Windows' installed apps (Settings > Apps).
+  removes it. If you installed it, it stays on your computer and keeps working. To remove it, use
+  **Remove** in the launcher before you update it; afterwards, delete the folder
+  `%LOCALAPPDATA%\Programs\Open3D\OpenGaussian` and its shortcuts in the Start menu and on the desktop (a
+  portable launcher keeps it in `Open3DLauncherData\Programs\OpenGaussian`, with no shortcut).
 
 ## 0.5.0 — 22 November 2026
 

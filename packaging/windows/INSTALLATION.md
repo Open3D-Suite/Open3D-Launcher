@@ -19,7 +19,7 @@ settings and download cache in `Open3DLauncherData\` beside it.
 
 The apps are of two kinds. The 3ds Max plug-ins are bundles: the launcher unpacks them into
 `%APPDATA%\Autodesk\ApplicationPlugins\<App>.bundle`, where every 3ds Max version loads them, with no
-administrator rights. The programs (OpenView, OpenRef, OpenFarm) are installed for
+administrator rights. The programs (OpenView, OpenRef, OpenFarm, OpenLibrary) are installed for
 everyone on the computer by their own per-machine MSI, into `C:\Program Files\Open3D\<App>`, when their
 release has one: the launcher starts `msiexec` as any program, so Windows asks for permission at each
 install, update and removal. A release without one, and a portable launcher always, unpacks the
